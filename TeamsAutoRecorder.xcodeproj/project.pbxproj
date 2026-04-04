@@ -288,6 +288,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = TeamsAutoRecorder;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Teams会議の録音にマイク音声を含めるために使用します。";
+				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Teamsアプリの音声を取得するために画面収録権限を使用します。";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -305,6 +307,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = TeamsAutoRecorder;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Teams会議の録音にマイク音声を含めるために使用します。";
+				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Teamsアプリの音声を取得するために画面収録権限を使用します。";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

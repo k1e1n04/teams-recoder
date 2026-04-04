@@ -1,4 +1,7 @@
 import Foundation
+import AppKit
+import AVFoundation
+import CoreGraphics
 
 public enum PermissionType: String, Equatable {
     case screenRecording
@@ -54,12 +57,34 @@ public final class DefaultPermissionChecker: PermissionChecking {
     public init() {}
 
     public func hasScreenRecordingPermission() -> Bool {
-        true
+        CGPreflightScreenCaptureAccess()
     }
 
     public func hasMicrophonePermission() -> Bool {
-        true
+        AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
     }
 
-    public func openSystemSettings() {}
+    public func openSystemSettings() {
+        let urls = [
+            URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"),
+            URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+        ].compactMap { $0 }
+        for url in urls {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    public func requestMissingPermissionsIfPossible() -> Bool {
+        if !CGPreflightScreenCaptureAccess() {
+            _ = CGRequestScreenCaptureAccess()
+        }
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+            let semaphore = DispatchSemaphore(value: 0)
+            AVCaptureDevice.requestAccess(for: .audio) { _ in
+                semaphore.signal()
+            }
+            semaphore.wait()
+        }
+        return hasScreenRecordingPermission() && hasMicrophonePermission()
+    }
 }

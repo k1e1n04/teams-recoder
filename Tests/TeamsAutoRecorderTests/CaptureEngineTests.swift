@@ -17,4 +17,44 @@ final class CaptureEngineTests: XCTestCase {
         XCTAssertEqual(artifact.sessionID, "s1")
         XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.mixedAudioURL.path))
     }
+
+    func testStopPrefersLiveCaptureArtifactWhenAvailable() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let liveOutput = CapturedAudioSamples(teams: [0.5, 0.5], mic: [0.5, 0.5])
+        let session = LiveCaptureSessionStub(stopResult: .success(liveOutput))
+        let engine = CaptureEngine(
+            mixer: AudioMixer(),
+            outputDirectory: dir,
+            liveCaptureFactory: { _ in session }
+        )
+
+        try engine.start(sessionID: "live-1")
+        let artifact = try engine.stop()
+        let body = try String(contentsOf: artifact.mixedAudioURL, encoding: .utf8)
+
+        XCTAssertEqual(session.startCallCount, 1)
+        XCTAssertEqual(session.stopCallCount, 1)
+        XCTAssertFalse(body.isEmpty)
+    }
+}
+
+private final class LiveCaptureSessionStub: LiveCaptureSession {
+    private(set) var startCallCount = 0
+    private(set) var stopCallCount = 0
+    private let stopResult: Result<CapturedAudioSamples, Error>
+
+    init(stopResult: Result<CapturedAudioSamples, Error>) {
+        self.stopResult = stopResult
+    }
+
+    func start() throws {
+        startCallCount += 1
+    }
+
+    func stop() throws -> CapturedAudioSamples {
+        stopCallCount += 1
+        return try stopResult.get()
+    }
 }

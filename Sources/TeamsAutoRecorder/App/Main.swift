@@ -159,6 +159,13 @@ private final class RuntimeController: ObservableObject {
         self.notificationSink = notificationSink
         guard loopTask == nil else { return }
 
+        let permissionChecker = DefaultPermissionChecker()
+        if !permissionChecker.requestMissingPermissionsIfPossible() {
+            statusText = "権限不足"
+            permissionChecker.openSystemSettings()
+            return
+        }
+
         do {
             let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
                 .appendingPathComponent("TeamsAutoRecorder", isDirectory: true)
@@ -268,7 +275,7 @@ private final class MicrophoneLevelMonitor {
     private let lock = NSLock()
     private var lastActiveAt: Date = .distantPast
 
-    init(thresholdRMS: Float = 0.005, holdSeconds: TimeInterval = 1.2) throws {
+    init(thresholdRMS: Float = 0.0015, holdSeconds: TimeInterval = 1.5) throws {
         self.thresholdRMS = thresholdRMS
         self.holdSeconds = holdSeconds
         try configureAndStart()

@@ -91,7 +91,16 @@ public struct AppBootstrap {
             inferencer: DefaultWhisperInferencer()
         )
         return RecorderOrchestrator(
-            detector: MeetingDetector(),
+            detector: MeetingDetector(
+                config: MeetingDetectorConfig(
+                    startUISeconds: 4,
+                    audioWindowSeconds: 6,
+                    audioRequiredRatio: 0.35,
+                    stopGraceSeconds: 6,
+                    minRecordingSeconds: 30,
+                    falsePositiveCapPerDay: 5
+                )
+            ),
             captureEngine: CaptureEngine(mixer: AudioMixer(), outputDirectory: storageDirectory),
             worker: TranscriptionWorker(transcriber: transcriber, maxRetries: 2),
             repository: repository
