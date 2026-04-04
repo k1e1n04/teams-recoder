@@ -78,6 +78,29 @@ public final class SessionRepository {
         return SessionRecord(sessionID: id, startedAt: startedAt, endedAt: endedAt, transcriptText: text)
     }
 
+    public func fetchRecentSessions(limit: Int) throws -> [SessionRecord] {
+        let sql = """
+        SELECT session_id, started_at, ended_at, transcript_text
+        FROM sessions
+        ORDER BY started_at DESC
+        LIMIT ?;
+        """
+
+        let stmt = try database.prepare(sql)
+        defer { database.finalize(stmt) }
+        sqlite3_bind_int(stmt, 1, Int32(limit))
+
+        var result: [SessionRecord] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = String(cString: sqlite3_column_text(stmt, 0))
+            let startedAt = sqlite3_column_double(stmt, 1)
+            let endedAt = sqlite3_column_double(stmt, 2)
+            let text = String(cString: sqlite3_column_text(stmt, 3))
+            result.append(.init(sessionID: id, startedAt: startedAt, endedAt: endedAt, transcriptText: text))
+        }
+        return result
+    }
+
     public func exportTranscript(sessionID: String, outputDirectory: URL) throws -> TranscriptExportURLs {
         guard let record = try fetchSession(sessionID: sessionID) else {
             throw DatabaseError.executionFailed(message: "session not found")
@@ -137,3 +160,9 @@ public final class SessionRepository {
         }
     }
 }
+
+public protocol SessionListing {
+    func fetchRecentSessions(limit: Int) throws -> [SessionRecord]
+}
+
+extension SessionRepository: SessionListing {}
