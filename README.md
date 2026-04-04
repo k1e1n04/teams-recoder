@@ -12,6 +12,8 @@ Teams 会議を自動検知し、録音停止後に文字起こしを行う macO
 - `WhisperModelManager` によるモデル永続化と未配置時の自動ダウンロード
 - `AudioNormalizer` による 16kHz mono float 正規化
 - `Database` / `SessionRepository` による SQLite 保存と `Transcript.txt` / `Transcript.json` 出力
+- `DashboardView` / `DashboardViewModel` による保存済み会議一覧表示（開始/終了時刻・文字起こし本文）
+- `SystemLaunchAtLoginManager` によるログイン時自動起動トグル
 - `MenuBarController` による状態表示とサイレント通知
 - E2E スモークテスト（起動→検知→録音→停止→変換完了）
 
@@ -59,5 +61,6 @@ swift test
 
 - `WhisperKitTranscriber` は実 WhisperKit を利用し、初回実行時にモデルを自動取得します。
 - モデル保存先は `~/Library/Application Support/TeamsAutoRecorder/Models` です。
+- ログイン時自動起動は `ServiceManagement` (`SMAppService.mainApp`) で制御しています。
 - 文字起こし前に音声を 16kHz mono float へ正規化します。
 - 実際の Screen Recording / Microphone 権限、ScreenCaptureKit/AVFoundation の本実装は今後のフェーズで詰める前提です。
