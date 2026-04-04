@@ -43,7 +43,7 @@ Teams会議を自動検知し、Teams標準録音機能を使わずに macOS デ
 6. `Transcript.txt` / `Transcript.json` / メタデータを保存
 
 ## WhisperKit Reuse Strategy
-`/Users/ishiiken/Develop/lumina-whisper` の `WhisperKitTranscriber` をベースに再利用:
+`../lumina-whisper`（隣接リポジトリ想定）の `WhisperKitTranscriber` をベースに再利用:
 - actorベースのモデルロード管理
 - RMS無音判定
 - ハルシネーション除去
