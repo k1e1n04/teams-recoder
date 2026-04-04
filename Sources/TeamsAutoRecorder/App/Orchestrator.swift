@@ -72,6 +72,8 @@ public final class RecorderOrchestrator {
     }
 }
 
+extension RecorderOrchestrator: @unchecked Sendable {}
+
 public struct AppBootstrap {
     public init() {}
 
@@ -94,5 +96,48 @@ public struct AppBootstrap {
             worker: TranscriptionWorker(transcriber: transcriber, maxRetries: 2),
             repository: repository
         )
+    }
+}
+
+@MainActor
+public final class RecorderRuntime {
+    private let windowSignalProvider: TeamsWindowSignalProviding
+    private let audioSignalProvider: TeamsAudioSignalProviding
+    private let orchestrator: RecorderOrchestrator?
+    private let tickHandler: (@MainActor (Bool, Bool, Date) async -> MeetingDetectorEvent?)?
+
+    public init(
+        windowSignalProvider: TeamsWindowSignalProviding,
+        audioSignalProvider: TeamsAudioSignalProviding,
+        tickHandler: @escaping @MainActor (Bool, Bool, Date) async -> MeetingDetectorEvent?
+    ) {
+        self.windowSignalProvider = windowSignalProvider
+        self.audioSignalProvider = audioSignalProvider
+        self.orchestrator = nil
+        self.tickHandler = tickHandler
+    }
+
+    public init(
+        orchestrator: RecorderOrchestrator,
+        windowSignalProvider: TeamsWindowSignalProviding,
+        audioSignalProvider: TeamsAudioSignalProviding
+    ) {
+        self.windowSignalProvider = windowSignalProvider
+        self.audioSignalProvider = audioSignalProvider
+        self.orchestrator = orchestrator
+        self.tickHandler = nil
+    }
+
+    @discardableResult
+    public func runIteration(at now: Date = Date()) async -> MeetingDetectorEvent? {
+        let windowActive = windowSignalProvider.isMeetingWindowActive(at: now)
+        let audioActive = audioSignalProvider.isAudioActive(at: now)
+        if let orchestrator {
+            return await orchestrator.tick(windowActive: windowActive, audioActive: audioActive, now: now)
+        }
+        guard let tickHandler else {
+            return nil
+        }
+        return await tickHandler(windowActive, audioActive, now)
     }
 }
