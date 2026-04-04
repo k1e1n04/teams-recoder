@@ -31,7 +31,7 @@ final class StubTranscriber: AudioTranscribing {
         self.failuresBeforeSuccess = failuresBeforeSuccess
     }
 
-    func transcribe(sessionID: String, audioURL: URL) throws -> TranscriptOutput {
+    func transcribe(sessionID: String, audioURL: URL) async throws -> TranscriptOutput {
         callCount += 1
         if callCount <= failuresBeforeSuccess {
             throw StubError.forced

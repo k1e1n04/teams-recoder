@@ -29,11 +29,11 @@ public struct TranscriptionWorker {
         self.maxRetries = maxRetries
     }
 
-    public func run(job: TranscriptionJob) -> TranscriptionResult {
+    public func run(job: TranscriptionJob) async -> TranscriptionResult {
         let totalAttempts = maxRetries + 1
         for attempt in 1...totalAttempts {
             do {
-                let output = try transcriber.transcribe(sessionID: job.sessionID, audioURL: job.audioURL)
+                let output = try await transcriber.transcribe(sessionID: job.sessionID, audioURL: job.audioURL)
                 return .success(output)
             } catch {
                 if attempt == totalAttempts {

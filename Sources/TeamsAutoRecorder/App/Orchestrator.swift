@@ -22,7 +22,7 @@ public final class RecorderOrchestrator {
     }
 
     @discardableResult
-    public func tick(windowActive: Bool, audioActive: Bool, now: Date) -> MeetingDetectorEvent? {
+    public func tick(windowActive: Bool, audioActive: Bool, now: Date) async -> MeetingDetectorEvent? {
         let event = detector.ingest(windowActive: windowActive, audioActive: audioActive, at: now)
         guard let event else {
             if case .recording = appStateMachine.state {
@@ -48,7 +48,7 @@ public final class RecorderOrchestrator {
                 return event
             }
 
-            let result = worker.run(job: .init(sessionID: sessionID, audioURL: artifact.mixedAudioURL))
+            let result = await worker.run(job: .init(sessionID: sessionID, audioURL: artifact.mixedAudioURL))
             switch result {
             case let .success(transcript):
                 let startedAt = currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970
@@ -79,10 +79,19 @@ public struct AppBootstrap {
         let db = try Database(path: storageDirectory.appendingPathComponent("teams-auto-recorder.sqlite").path)
         try db.migrate()
         let repository = SessionRepository(database: db, fileManager: .default)
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("TeamsAutoRecorder")
+        let modelsDir = appSupport.appendingPathComponent("Models", isDirectory: true)
+        let modelManager = WhisperModelManager(baseDirectory: modelsDir, downloader: DefaultWhisperModelDownloader())
+        let transcriber = WhisperKitTranscriber(
+            modelManager: modelManager,
+            normalizer: AudioNormalizer(),
+            inferencer: DefaultWhisperInferencer()
+        )
         return RecorderOrchestrator(
             detector: MeetingDetector(),
             captureEngine: CaptureEngine(mixer: AudioMixer(), outputDirectory: storageDirectory),
-            worker: TranscriptionWorker(transcriber: WhisperKitTranscriber(), maxRetries: 2),
+            worker: TranscriptionWorker(transcriber: transcriber, maxRetries: 2),
             repository: repository
         )
     }

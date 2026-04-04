@@ -1,4 +1,5 @@
 import Foundation
+import WhisperKit
 
 public struct TranscriptSegment: Codable, Equatable {
     public let start: Double
@@ -25,25 +26,58 @@ public struct TranscriptOutput: Codable, Equatable {
 }
 
 public protocol AudioTranscribing {
-    func transcribe(sessionID: String, audioURL: URL) throws -> TranscriptOutput
+    func transcribe(sessionID: String, audioURL: URL) async throws -> TranscriptOutput
+}
+
+public enum WhisperTranscriberError: Error {
+    case modelLoadFailed(String)
+    case transcriptionFailed(String)
+}
+
+public protocol WhisperInferencing {
+    func transcribe(samples: [Float], sampleRate: Double, modelPath: URL) async throws -> [TranscriptSegment]
 }
 
 public final class WhisperKitTranscriber: AudioTranscribing {
-    public let modelSize: String
+    private let modelName: String
+    private let modelManager: WhisperModelManaging
+    private let normalizer: AudioNormalizing
+    private let inferencer: WhisperInferencing
 
-    public init(modelSize: String = "medium") {
-        self.modelSize = modelSize
+    public init(
+        modelName: String = "medium",
+        modelManager: WhisperModelManaging,
+        normalizer: AudioNormalizing,
+        inferencer: WhisperInferencing
+    ) {
+        self.modelName = modelName
+        self.modelManager = modelManager
+        self.normalizer = normalizer
+        self.inferencer = inferencer
     }
 
-    public func transcribe(sessionID: String, audioURL: URL) throws -> TranscriptOutput {
-        let text = (try? String(contentsOf: audioURL, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalized = (text?.isEmpty == false) ? text! : "[transcribed by WhisperKit \(modelSize)]"
-        return TranscriptOutput(
-            sessionID: sessionID,
-            fullText: normalized,
-            segments: [
-                TranscriptSegment(start: 0, end: 1, text: normalized)
-            ]
-        )
+    public func transcribe(sessionID: String, audioURL: URL) async throws -> TranscriptOutput {
+        let modelURL: URL
+        do {
+            modelURL = try await modelManager.resolveModel(named: modelName)
+        } catch {
+            throw WhisperTranscriberError.modelLoadFailed(String(describing: error))
+        }
+
+        do {
+            let normalized = try normalizer.normalize(audioURL: audioURL)
+            let segments = try await inferencer.transcribe(
+                samples: normalized.samples,
+                sampleRate: normalized.sampleRate,
+                modelPath: modelURL
+            )
+            let fullText = segments
+                .map(\.text)
+                .joined(separator: " ")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return TranscriptOutput(sessionID: sessionID, fullText: fullText, segments: segments)
+        } catch {
+            throw WhisperTranscriberError.transcriptionFailed(String(describing: error))
+        }
     }
 }

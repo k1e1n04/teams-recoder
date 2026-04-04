@@ -2,7 +2,7 @@ import XCTest
 @testable import TeamsAutoRecorder
 
 final class E2ESmokeTests: XCTestCase {
-    func testDetectionToTranscriptionFlow() throws {
+    func testDetectionToTranscriptionFlow() async throws {
         let temp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
 
@@ -18,13 +18,15 @@ final class E2ESmokeTests: XCTestCase {
 
         let start = Date(timeIntervalSince1970: 0)
         let events: [MeetingDetectorEvent?] = [
-            orchestrator.tick(windowActive: true, audioActive: true, now: start),
-            orchestrator.tick(windowActive: true, audioActive: true, now: start.addingTimeInterval(1)),
-            orchestrator.tick(windowActive: false, audioActive: false, now: start.addingTimeInterval(2))
+            await orchestrator.tick(windowActive: true, audioActive: true, now: start),
+            await orchestrator.tick(windowActive: true, audioActive: true, now: start.addingTimeInterval(1)),
+            await orchestrator.tick(windowActive: false, audioActive: false, now: start.addingTimeInterval(2))
         ]
 
         XCTAssertTrue(events.contains(.started(sessionID: "session-1")))
         XCTAssertTrue(events.contains(.stopped(sessionID: "session-1")))
+
+        try await Task.sleep(nanoseconds: 200_000_000)
 
         let saved = try orchestrator.repository.fetchSession(sessionID: "session-1")
         XCTAssertEqual(saved?.sessionID, "session-1")
