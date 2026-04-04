@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct TeamsAutoRecorderApp: App {
     @StateObject private var viewModel = DashboardFactory.makeViewModel()
+    private let notificationSink = MacOSNotificationSink()
 
     var body: some Scene {
         WindowGroup("TeamsAutoRecorder") {
@@ -17,6 +18,7 @@ struct TeamsAutoRecorderApp: App {
                 )
                 .onAppear {
                     viewModel.loadSessions()
+                    notificationSink.requestAuthorizationIfNeeded()
                 }
         }
     }
