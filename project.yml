@@ -6,12 +6,22 @@ settings:
   base:
     PRODUCT_BUNDLE_IDENTIFIER: com.k1e1n04.TeamsAutoRecorder
     SWIFT_VERSION: 6.0
+packages:
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit.git
+    from: 0.12.0
+  ZIPFoundation:
+    url: https://github.com/weichsel/ZIPFoundation.git
+    from: 0.9.0
 targets:
   TeamsAutoRecorder:
     type: application
     platform: macOS
     sources:
       - Sources/TeamsAutoRecorder
+    dependencies:
+      - package: WhisperKit
+      - package: ZIPFoundation
     settings:
       base:
         INFOPLIST_KEY_CFBundleDisplayName: TeamsAutoRecorder
