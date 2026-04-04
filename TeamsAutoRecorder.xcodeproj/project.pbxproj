@@ -1,0 +1,393 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0718D3538FD3351B7FCE573A /* TeamsWindowSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */; };
+		0954B63ABE167108494A615B /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E0F1E1512929AD5C6BCFB5 /* MenuBarController.swift */; };
+		1E6B86AA48FA6BCB22B04908 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3187CA4344D0C2789FDBB2A /* AppState.swift */; };
+		4CC38E9EDE2174C3505915E7 /* Orchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728CBA3A55318797F526CADD /* Orchestrator.swift */; };
+		5024222E23FF0516CC0207C1 /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88033F4EE313D5855BB38E9B /* SessionRepository.swift */; };
+		6E4376385544B03ED6397DB0 /* MeetingDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E31ABD63F8FD47C26B1705 /* MeetingDetector.swift */; };
+		781429B4E55BE4A61DFCBA7C /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04058DB234ED210257C5ACAB /* Main.swift */; };
+		849F5F56F1F6B36993F0C071 /* AudioMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1C90C3985FFD0CBD2597EE5 /* AudioMixer.swift */; };
+		8931CD46AEFA85258DFB7657 /* PermissionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149B830B5142099F8F16D1CE /* PermissionCoordinator.swift */; };
+		92F3D5B1E81962E28F5250E3 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C7D6AF0013B48AB28D8161B /* Database.swift */; };
+		93AC5D21521FB3805C869F9A /* TranscriptionWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 860278D30896B2227C270FBE /* TranscriptionWorker.swift */; };
+		998F1DCB9466C040DF0205A7 /* TeamsAudioSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */; };
+		F024C025090C661851254440 /* WhisperKitTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62BD51C27DFD71159FDB7479 /* WhisperKitTranscriber.swift */; };
+		FD143A6B8DBDB62D27EDF5A7 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BC70BB091E153D078C63AD /* CaptureEngine.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		02E31ABD63F8FD47C26B1705 /* MeetingDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetector.swift; sourceTree = "<group>"; };
+		04058DB234ED210257C5ACAB /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
+		0C7D6AF0013B48AB28D8161B /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
+		149B830B5142099F8F16D1CE /* PermissionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionCoordinator.swift; sourceTree = "<group>"; };
+		21E0F1E1512929AD5C6BCFB5 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
+		580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsAudioSignalProvider.swift; sourceTree = "<group>"; };
+		62BD51C27DFD71159FDB7479 /* WhisperKitTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitTranscriber.swift; sourceTree = "<group>"; };
+		728CBA3A55318797F526CADD /* Orchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Orchestrator.swift; sourceTree = "<group>"; };
+		76E29FAACB1C955903DBB56D /* TeamsAutoRecorder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeamsAutoRecorder.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		860278D30896B2227C270FBE /* TranscriptionWorker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionWorker.swift; sourceTree = "<group>"; };
+		88033F4EE313D5855BB38E9B /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
+		A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsWindowSignalProvider.swift; sourceTree = "<group>"; };
+		E1C90C3985FFD0CBD2597EE5 /* AudioMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMixer.swift; sourceTree = "<group>"; };
+		E5BC70BB091E153D078C63AD /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
+		F3187CA4344D0C2789FDBB2A /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0459042AB7581078099AA6B5 /* Permissions */ = {
+			isa = PBXGroup;
+			children = (
+				149B830B5142099F8F16D1CE /* PermissionCoordinator.swift */,
+			);
+			path = Permissions;
+			sourceTree = "<group>";
+		};
+		0D9ADFABB32A5F7F839F8489 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				76E29FAACB1C955903DBB56D /* TeamsAutoRecorder.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1F823CCDDF360DCEE5037C0D = {
+			isa = PBXGroup;
+			children = (
+				E98789EBDD701082400ABCFD /* TeamsAutoRecorder */,
+				0D9ADFABB32A5F7F839F8489 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		279CC797231666D0B5D3FCAB /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				21E0F1E1512929AD5C6BCFB5 /* MenuBarController.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		546317F2239C13D7537E1256 /* Detector */ = {
+			isa = PBXGroup;
+			children = (
+				02E31ABD63F8FD47C26B1705 /* MeetingDetector.swift */,
+				580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */,
+				A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */,
+			);
+			path = Detector;
+			sourceTree = "<group>";
+		};
+		5FB315A134CF8F2FCE2E02F2 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				F3187CA4344D0C2789FDBB2A /* AppState.swift */,
+				04058DB234ED210257C5ACAB /* Main.swift */,
+				728CBA3A55318797F526CADD /* Orchestrator.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AB3A2BD2CEC0532D8B2D2586 /* Transcription */ = {
+			isa = PBXGroup;
+			children = (
+				860278D30896B2227C270FBE /* TranscriptionWorker.swift */,
+				62BD51C27DFD71159FDB7479 /* WhisperKitTranscriber.swift */,
+			);
+			path = Transcription;
+			sourceTree = "<group>";
+		};
+		B482EB47FACD6C69C3D2F20F /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				E1C90C3985FFD0CBD2597EE5 /* AudioMixer.swift */,
+				E5BC70BB091E153D078C63AD /* CaptureEngine.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		D999E5AF57DA022FF0AEEAC6 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				0C7D6AF0013B48AB28D8161B /* Database.swift */,
+				88033F4EE313D5855BB38E9B /* SessionRepository.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		E98789EBDD701082400ABCFD /* TeamsAutoRecorder */ = {
+			isa = PBXGroup;
+			children = (
+				5FB315A134CF8F2FCE2E02F2 /* App */,
+				B482EB47FACD6C69C3D2F20F /* Capture */,
+				546317F2239C13D7537E1256 /* Detector */,
+				0459042AB7581078099AA6B5 /* Permissions */,
+				D999E5AF57DA022FF0AEEAC6 /* Storage */,
+				AB3A2BD2CEC0532D8B2D2586 /* Transcription */,
+				279CC797231666D0B5D3FCAB /* UI */,
+			);
+			name = TeamsAutoRecorder;
+			path = Sources/TeamsAutoRecorder;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A361CF076420615A659FDDA4 /* TeamsAutoRecorder */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 73B3FFBBB1A8DF9D00B36E59 /* Build configuration list for PBXNativeTarget "TeamsAutoRecorder" */;
+			buildPhases = (
+				AB2E7E37513F477D03083BEC /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TeamsAutoRecorder;
+			packageProductDependencies = (
+			);
+			productName = TeamsAutoRecorder;
+			productReference = 76E29FAACB1C955903DBB56D /* TeamsAutoRecorder.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B23B715E808DC753DEDBD6AA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = B2288082E389567FDF8E8255 /* Build configuration list for PBXProject "TeamsAutoRecorder" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1F823CCDDF360DCEE5037C0D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0D9ADFABB32A5F7F839F8489 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A361CF076420615A659FDDA4 /* TeamsAutoRecorder */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AB2E7E37513F477D03083BEC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1E6B86AA48FA6BCB22B04908 /* AppState.swift in Sources */,
+				849F5F56F1F6B36993F0C071 /* AudioMixer.swift in Sources */,
+				FD143A6B8DBDB62D27EDF5A7 /* CaptureEngine.swift in Sources */,
+				92F3D5B1E81962E28F5250E3 /* Database.swift in Sources */,
+				781429B4E55BE4A61DFCBA7C /* Main.swift in Sources */,
+				6E4376385544B03ED6397DB0 /* MeetingDetector.swift in Sources */,
+				0954B63ABE167108494A615B /* MenuBarController.swift in Sources */,
+				4CC38E9EDE2174C3505915E7 /* Orchestrator.swift in Sources */,
+				8931CD46AEFA85258DFB7657 /* PermissionCoordinator.swift in Sources */,
+				5024222E23FF0516CC0207C1 /* SessionRepository.swift in Sources */,
+				998F1DCB9466C040DF0205A7 /* TeamsAudioSignalProvider.swift in Sources */,
+				0718D3538FD3351B7FCE573A /* TeamsWindowSignalProvider.swift in Sources */,
+				93AC5D21521FB3805C869F9A /* TranscriptionWorker.swift in Sources */,
+				F024C025090C661851254440 /* WhisperKitTranscriber.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3B0DB7C03FA39C07F61F6983 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = TeamsAutoRecorder;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		4CAE64F855C612FB89D06F0D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = TeamsAutoRecorder;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		5D0A4D87DC09C1DCB174BBFD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.k1e1n04.TeamsAutoRecorder;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		C60553ED33EAE55C047ADDE2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.k1e1n04.TeamsAutoRecorder;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		73B3FFBBB1A8DF9D00B36E59 /* Build configuration list for PBXNativeTarget "TeamsAutoRecorder" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3B0DB7C03FA39C07F61F6983 /* Debug */,
+				4CAE64F855C612FB89D06F0D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B2288082E389567FDF8E8255 /* Build configuration list for PBXProject "TeamsAutoRecorder" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C60553ED33EAE55C047ADDE2 /* Debug */,
+				5D0A4D87DC09C1DCB174BBFD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B23B715E808DC753DEDBD6AA /* Project object */;
+}

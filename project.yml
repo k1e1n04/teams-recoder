@@ -1,0 +1,25 @@
+name: TeamsAutoRecorder
+options:
+  deploymentTarget:
+    macOS: '13.0'
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.k1e1n04.TeamsAutoRecorder
+    SWIFT_VERSION: 6.0
+targets:
+  TeamsAutoRecorder:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/TeamsAutoRecorder
+    settings:
+      base:
+        INFOPLIST_KEY_CFBundleDisplayName: TeamsAutoRecorder
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        GENERATE_INFOPLIST_FILE: YES
+        MACOSX_DEPLOYMENT_TARGET: 13.0
+schemes:
+  TeamsAutoRecorder:
+    build:
+      targets:
+        TeamsAutoRecorder: all
