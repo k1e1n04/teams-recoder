@@ -208,16 +208,15 @@ private final class RuntimeController: ObservableObject {
 
     private func hasVisibleTeamsWindow() -> Bool {
         let candidateBundleIDs = ["com.microsoft.teams2", "com.microsoft.teams"]
-        let pids = Set(
-            candidateBundleIDs
-                .flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0) }
-                .map(\.processIdentifier)
-        )
+        let runningApps = candidateBundleIDs
+            .flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0) }
+            .filter { !$0.isTerminated }
+        let pids = Set(runningApps.map(\.processIdentifier))
         guard !pids.isEmpty else { return false }
 
         guard let windowInfo = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
                 as? [[String: Any]] else {
-            return false
+            return runningApps.contains(where: { !$0.isHidden })
         }
 
         for info in windowInfo {
@@ -244,7 +243,8 @@ private final class RuntimeController: ObservableObject {
             return true
         }
 
-        return false
+        // Fallback for environments where window enumeration is limited.
+        return runningApps.contains(where: { !$0.isHidden })
     }
 
     private func consume(_ event: MeetingDetectorEvent) {
