@@ -198,13 +198,20 @@ private final class RuntimeController: ObservableObject {
             let windowProvider = TeamsWindowSignalProvider { _ in
                 self.hasVisibleTeamsWindow()
             }
-            let audioProvider: TeamsAudioSignalProvider
+            let audioProvider: TeamsAudioSignalProviding
             do {
                 let monitor = try MicrophoneLevelMonitor()
                 microphoneMonitor = monitor
-                audioProvider = TeamsAudioSignalProvider { date in
+                let micProvider = TeamsAudioSignalProvider { date in
                     monitor.isActive(at: date)
                 }
+                let windowFallbackProvider = TeamsAudioSignalProvider { date in
+                    windowProvider.isMeetingWindowActive(at: date)
+                }
+                audioProvider = FallbackAudioSignalProvider(
+                    primary: micProvider,
+                    fallback: windowFallbackProvider
+                )
             } catch {
                 // Fallback to conservative behavior if mic metering setup fails.
                 audioProvider = TeamsAudioSignalProvider { date in

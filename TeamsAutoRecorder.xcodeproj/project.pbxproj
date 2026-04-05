@@ -10,6 +10,7 @@
 		0718D3538FD3351B7FCE573A /* TeamsWindowSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */; };
 		0954B63ABE167108494A615B /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E0F1E1512929AD5C6BCFB5 /* MenuBarController.swift */; };
 		1E6B86AA48FA6BCB22B04908 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3187CA4344D0C2789FDBB2A /* AppState.swift */; };
+		2FC63D5B945056AEA4C1001A /* FallbackAudioSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */; };
 		40EDC1295F63C6BD1A99D580 /* DefaultWhisperInferencer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DCADF51CAD7B23159EA763A /* DefaultWhisperInferencer.swift */; };
 		4CC38E9EDE2174C3505915E7 /* Orchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728CBA3A55318797F526CADD /* Orchestrator.swift */; };
 		5024222E23FF0516CC0207C1 /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88033F4EE313D5855BB38E9B /* SessionRepository.swift */; };
@@ -41,6 +42,7 @@
 		1DCADF51CAD7B23159EA763A /* DefaultWhisperInferencer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultWhisperInferencer.swift; sourceTree = "<group>"; };
 		21E0F1E1512929AD5C6BCFB5 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
 		580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsAudioSignalProvider.swift; sourceTree = "<group>"; };
+		5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FallbackAudioSignalProvider.swift; sourceTree = "<group>"; };
 		62BD51C27DFD71159FDB7479 /* WhisperKitTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitTranscriber.swift; sourceTree = "<group>"; };
 		67773F507000A9EC666439C3 /* DefaultWhisperModelDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultWhisperModelDownloader.swift; sourceTree = "<group>"; };
 		728CBA3A55318797F526CADD /* Orchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Orchestrator.swift; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 		546317F2239C13D7537E1256 /* Detector */ = {
 			isa = PBXGroup;
 			children = (
+				5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */,
 				02E31ABD63F8FD47C26B1705 /* MeetingDetector.swift */,
 				580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */,
 				A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */,
@@ -261,6 +264,7 @@
 				92F3D5B1E81962E28F5250E3 /* Database.swift in Sources */,
 				40EDC1295F63C6BD1A99D580 /* DefaultWhisperInferencer.swift in Sources */,
 				F7D0B0CB608C8B43D83265C4 /* DefaultWhisperModelDownloader.swift in Sources */,
+				2FC63D5B945056AEA4C1001A /* FallbackAudioSignalProvider.swift in Sources */,
 				80D5CCD1EEA255161EA6DF76 /* LaunchAtLoginManager.swift in Sources */,
 				781429B4E55BE4A61DFCBA7C /* Main.swift in Sources */,
 				6E4376385544B03ED6397DB0 /* MeetingDetector.swift in Sources */,
@@ -288,8 +292,6 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = TeamsAutoRecorder;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Teams会議の録音にマイク音声を含めるために使用します。";
-				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Teamsアプリの音声を取得するために画面収録権限を使用します。";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -307,8 +309,6 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = TeamsAutoRecorder;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Teams会議の録音にマイク音声を含めるために使用します。";
-				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Teamsアプリの音声を取得するために画面収録権限を使用します。";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
