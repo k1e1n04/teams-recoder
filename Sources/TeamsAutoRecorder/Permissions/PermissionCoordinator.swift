@@ -65,26 +65,35 @@ public final class DefaultPermissionChecker: PermissionChecking {
     }
 
     public func openSystemSettings() {
+        openSystemSettings(for: [.screenRecording, .microphone])
+    }
+
+    public func openSystemSettings(for permissions: [PermissionType]) {
         let urls = [
-            URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"),
-            URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+            permissions.contains(.screenRecording)
+                ? URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
+                : nil,
+            permissions.contains(.microphone)
+                ? URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+                : nil
         ].compactMap { $0 }
         for url in urls {
             NSWorkspace.shared.open(url)
         }
     }
 
-    public func requestMissingPermissionsIfPossible() -> Bool {
+    public func requestScreenRecordingPermissionIfNeeded() -> Bool {
         if !CGPreflightScreenCaptureAccess() {
             _ = CGRequestScreenCaptureAccess()
         }
-        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
-            let semaphore = DispatchSemaphore(value: 0)
-            AVCaptureDevice.requestAccess(for: .audio) { _ in
-                semaphore.signal()
-            }
-            semaphore.wait()
-        }
-        return hasScreenRecordingPermission() && hasMicrophonePermission()
+        return CGPreflightScreenCaptureAccess()
+    }
+
+    public func microphoneAuthorizationStatus() -> AVAuthorizationStatus {
+        AVCaptureDevice.authorizationStatus(for: .audio)
+    }
+
+    public func requestMicrophonePermission(_ completion: @escaping @Sendable (Bool) -> Void) {
+        AVCaptureDevice.requestAccess(for: .audio, completionHandler: completion)
     }
 }

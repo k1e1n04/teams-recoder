@@ -160,12 +160,35 @@ private final class RuntimeController: ObservableObject {
         guard loopTask == nil else { return }
 
         let permissionChecker = DefaultPermissionChecker()
-        if !permissionChecker.requestMissingPermissionsIfPossible() {
-            statusText = "権限不足"
-            permissionChecker.openSystemSettings()
+        if !permissionChecker.requestScreenRecordingPermissionIfNeeded() {
+            statusText = "権限不足: 画面収録"
+            permissionChecker.openSystemSettings(for: [.screenRecording])
             return
         }
 
+        switch permissionChecker.microphoneAuthorizationStatus() {
+        case .authorized:
+            bootstrapRuntime()
+        case .notDetermined:
+            statusText = "マイク権限を確認中"
+            permissionChecker.requestMicrophonePermission { [weak self] granted in
+                Task { @MainActor in
+                    guard let self else { return }
+                    if granted {
+                        self.startIfNeeded(notificationSink: notificationSink, onSessionSaved: onSessionSaved)
+                    } else {
+                        self.statusText = "権限不足: マイク"
+                        permissionChecker.openSystemSettings(for: [.microphone])
+                    }
+                }
+            }
+        default:
+            statusText = "権限不足: マイク"
+            permissionChecker.openSystemSettings(for: [.microphone])
+        }
+    }
+
+    private func bootstrapRuntime() {
         do {
             let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
                 .appendingPathComponent("TeamsAutoRecorder", isDirectory: true)
