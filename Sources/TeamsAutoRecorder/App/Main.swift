@@ -175,10 +175,10 @@ private final class RuntimeController: ObservableObject {
                 Task { @MainActor in
                     guard let self else { return }
                     if granted {
-                        self.startIfNeeded(notificationSink: notificationSink, onSessionSaved: onSessionSaved)
+                        self.bootstrapRuntime()
                     } else {
                         self.statusText = "権限不足: マイク"
-                        permissionChecker.openSystemSettings(for: [.microphone])
+                        DefaultPermissionChecker().openSystemSettings(for: [.microphone])
                     }
                 }
             }
