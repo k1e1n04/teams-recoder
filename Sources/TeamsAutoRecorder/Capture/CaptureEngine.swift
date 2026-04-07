@@ -121,7 +121,7 @@ public final class CaptureEngine {
         let mixedSamples: [Float]
         if let liveSession {
             let live = try liveSession.stop()
-            mixedSamples = mixer.mix(teams: live.teams, mic: live.mic)
+            mixedSamples = live.mixed ?? mixer.mix(teams: live.teams, mic: live.mic)
             self.liveSession = nil
         } else {
             let orderedTimestamps = chunks.keys.sorted()
