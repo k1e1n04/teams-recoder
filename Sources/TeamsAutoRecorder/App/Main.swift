@@ -809,7 +809,9 @@ private enum DashboardFactory {
             try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
             let database = try Database(path: base.appendingPathComponent("teams-auto-recorder.sqlite").path)
             try database.migrate()
-            let repository = SessionRepository(database: database, fileManager: .default)
+            let artifactStore = SessionAudioArtifactStore(directory: base)
+            try artifactStore.cleanupExpiredArtifacts()
+            let repository = SessionRepository(database: database, fileManager: .default, artifactStore: artifactStore)
             return DashboardViewModel(
                 sessionProvider: repository,
                 sessionDeleter: repository,

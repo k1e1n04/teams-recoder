@@ -8,7 +8,11 @@ final class SessionRepositoryTests: XCTestCase {
 
         let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
         try db.migrate()
-        let repo = SessionRepository(database: db, fileManager: .default)
+        let repo = SessionRepository(
+            database: db,
+            fileManager: .default,
+            artifactStore: SessionAudioArtifactStore(directory: dir)
+        )
 
         let record = SessionRecord(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
         try repo.saveSession(record)
@@ -27,7 +31,11 @@ final class SessionRepositoryTests: XCTestCase {
 
         let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
         try db.migrate()
-        let repo = SessionRepository(database: db, fileManager: .default)
+        let repo = SessionRepository(
+            database: db,
+            fileManager: .default,
+            artifactStore: SessionAudioArtifactStore(directory: dir)
+        )
 
         let record = SessionRecord(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
         try repo.saveSession(record)
@@ -43,7 +51,11 @@ final class SessionRepositoryTests: XCTestCase {
 
         let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
         try db.migrate()
-        let repo = SessionRepository(database: db, fileManager: .default)
+        let repo = SessionRepository(
+            database: db,
+            fileManager: .default,
+            artifactStore: SessionAudioArtifactStore(directory: dir)
+        )
 
         let record = SessionRecord(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
         try repo.saveSession(record)
@@ -60,7 +72,11 @@ final class SessionRepositoryTests: XCTestCase {
 
         let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
         try db.migrate()
-        let repo = SessionRepository(database: db, fileManager: .default)
+        let repo = SessionRepository(
+            database: db,
+            fileManager: .default,
+            artifactStore: SessionAudioArtifactStore(directory: dir)
+        )
 
         try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hi"))
 
@@ -74,7 +90,11 @@ final class SessionRepositoryTests: XCTestCase {
 
         let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
         try db.migrate()
-        let repo = SessionRepository(database: db, fileManager: .default)
+        let repo = SessionRepository(
+            database: db,
+            fileManager: .default,
+            artifactStore: SessionAudioArtifactStore(directory: dir)
+        )
 
         try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "one"))
         try repo.saveSession(.init(sessionID: "s2", startedAt: 3, endedAt: 4, transcriptText: "two"))
@@ -104,5 +124,55 @@ final class SessionRepositoryTests: XCTestCase {
         let fetched = try repo.fetchSession(sessionID: "s1")
         XCTAssertEqual(fetched?.failureStage, .modelResolve)
         XCTAssertEqual(fetched?.failureReason, "model missing")
+    }
+
+    func testDeleteSessionRemovesAssociatedRawAudioArtifact() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(
+            database: db,
+            fileManager: .default,
+            artifactStore: SessionAudioArtifactStore(directory: dir)
+        )
+
+        try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello"))
+        let rawURL = dir.appendingPathComponent("s1-mixed.raw")
+        try "0.1\n0.2".write(to: rawURL, atomically: true, encoding: .utf8)
+
+        try repo.deleteSession(sessionID: "s1")
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: rawURL.path))
+        XCTAssertNil(try repo.fetchSession(sessionID: "s1"))
+    }
+
+    func testBootstrapCleansUpExpiredFailedRawAudioArtifacts() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let db = try Database(path: dir.appendingPathComponent("teams-auto-recorder.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+        try repo.saveSession(.init(
+            sessionID: "stale-failure",
+            startedAt: Date().addingTimeInterval(-(8 * 24 * 60 * 60)).timeIntervalSince1970,
+            endedAt: Date().addingTimeInterval(-(8 * 24 * 60 * 60) + 30).timeIntervalSince1970,
+            transcriptText: "[transcription failed] timeout",
+            failureStage: .whisperInfer,
+            failureReason: "timeout"
+        ))
+
+        let rawURL = dir.appendingPathComponent("stale-failure-mixed.raw")
+        try "0.1\n0.2".write(to: rawURL, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date().addingTimeInterval(-(8 * 24 * 60 * 60))],
+            ofItemAtPath: rawURL.path
+        )
+
+        _ = try AppBootstrap().makeDefaultOrchestrator(storageDirectory: dir)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: rawURL.path))
     }
 }

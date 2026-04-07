@@ -11,6 +11,7 @@ public final class RecorderOrchestrator {
     private let detector: MeetingDetector
     private let captureEngine: CaptureEngine
     private let worker: TranscriptionWorker
+    private let artifactStore: SessionAudioArtifactStore?
     private var appStateMachine = AppStateMachine()
     private var currentSessionStartedAt: Date?
     public var isRecording: Bool {
@@ -22,12 +23,14 @@ public final class RecorderOrchestrator {
         detector: MeetingDetector,
         captureEngine: CaptureEngine,
         worker: TranscriptionWorker,
-        repository: SessionRepository
+        repository: SessionRepository,
+        artifactStore: SessionAudioArtifactStore? = nil
     ) {
         self.detector = detector
         self.captureEngine = captureEngine
         self.worker = worker
         self.repository = repository
+        self.artifactStore = artifactStore
     }
 
     @discardableResult
@@ -124,6 +127,7 @@ public final class RecorderOrchestrator {
             )
             do {
                 try repository.saveSession(record)
+                try artifactStore?.deleteArtifact(for: sessionID)
             } catch {
                 appStateMachine.reset()
                 return .failure(.init(
@@ -170,7 +174,9 @@ public struct AppBootstrap {
     public func makeDefaultOrchestrator(storageDirectory: URL) throws -> RecorderOrchestrator {
         let db = try Database(path: storageDirectory.appendingPathComponent("teams-auto-recorder.sqlite").path)
         try db.migrate()
-        let repository = SessionRepository(database: db, fileManager: .default)
+        let artifactStore = SessionAudioArtifactStore(directory: storageDirectory)
+        try artifactStore.cleanupExpiredArtifacts()
+        let repository = SessionRepository(database: db, fileManager: .default, artifactStore: artifactStore)
         let appSupport = try AppSupportDirectoryResolver().resolve()
         let modelsDir = appSupport.appendingPathComponent("Models", isDirectory: true)
         let modelManager = WhisperModelManager(baseDirectory: modelsDir, downloader: DefaultWhisperModelDownloader())
@@ -192,7 +198,8 @@ public struct AppBootstrap {
             ),
             captureEngine: CaptureEngine(mixer: AudioMixer(), outputDirectory: storageDirectory),
             worker: TranscriptionWorker(transcriber: transcriber, maxRetries: 2),
-            repository: repository
+            repository: repository,
+            artifactStore: artifactStore
         )
     }
 }

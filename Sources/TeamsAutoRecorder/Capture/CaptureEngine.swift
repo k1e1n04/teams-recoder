@@ -124,7 +124,13 @@ public final class CaptureEngine {
         let mixedSamples: [Float]
         if let liveSession {
             let live = try liveSession.stop()
-            mixedSamples = live.mixed ?? mixer.mix(teams: live.teams, mic: live.mic)
+            let fallbackMixed = mixer.mix(teams: live.teams, mic: live.mic)
+            if let recordedMixed = live.mixed,
+               !(Self.isEffectivelySilent(recordedMixed) && Self.containsAudibleContent(in: fallbackMixed)) {
+                mixedSamples = recordedMixed
+            } else {
+                mixedSamples = fallbackMixed
+            }
             self.liveSession = nil
         } else {
             let orderedTimestamps = chunks.keys.sorted()
@@ -140,6 +146,14 @@ public final class CaptureEngine {
         currentSessionID = nil
         chunks.removeAll(keepingCapacity: true)
         return CaptureArtifact(sessionID: sessionID, mixedAudioURL: mixedURL)
+    }
+
+    private static func isEffectivelySilent(_ samples: [Float], epsilon: Float = 0.000_001) -> Bool {
+        samples.allSatisfy { abs($0) <= epsilon }
+    }
+
+    private static func containsAudibleContent(in samples: [Float], epsilon: Float = 0.000_001) -> Bool {
+        samples.contains { abs($0) > epsilon }
     }
 }
 

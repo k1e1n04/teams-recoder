@@ -53,6 +53,39 @@ swift build
 swift test
 ```
 
+## 公証
+
+`xcrun notarytool store-credentials` で notary 用の認証情報を Keychain に保存すると、後続の公証で `--keychain-profile` として再利用できます。
+
+```bash
+xcrun notarytool store-credentials "teams-auto-recorder-notary" \
+  --apple-id "your-apple-id@example.com" \
+  --team-id "YOURTEAMID" \
+  --password "xxxx-xxxx-xxxx-xxxx"
+```
+
+以下のように表示されたら登録完了です。
+
+```text
+Validating your credentials...
+Success. Credentials validated.
+Credentials saved to Keychain.
+To use them, specify `--keychain-profile "teams-auto-recorder-notary"`
+```
+
+このプロファイル名は `notarytool submit` や `scripts/create-dmg.sh --notarize` で使えます。
+
+```bash
+xcrun notarytool submit build/TeamsAutoRecorder.dmg \
+  --keychain-profile "teams-auto-recorder-notary" \
+  --wait
+
+scripts/create-dmg.sh \
+  --sign "Developer ID Application: Your Name (TEAMID)" \
+  --notarize \
+  --keychain-profile "teams-auto-recorder-notary"
+```
+
 ## 仕様・計画
 
 - 設計: `docs/superpowers/specs/2026-04-04-teams-auto-recorder-design.md`

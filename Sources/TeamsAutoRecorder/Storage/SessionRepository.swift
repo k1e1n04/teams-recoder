@@ -40,10 +40,16 @@ public struct TranscriptExportURLs: Equatable {
 public final class SessionRepository {
     private let database: Database
     private let fileManager: FileManager
+    private let artifactStore: SessionAudioArtifactStore?
 
-    public init(database: Database, fileManager: FileManager) {
+    public init(
+        database: Database,
+        fileManager: FileManager,
+        artifactStore: SessionAudioArtifactStore? = nil
+    ) {
         self.database = database
         self.fileManager = fileManager
+        self.artifactStore = artifactStore
     }
 
     public func saveSession(_ record: SessionRecord) throws {
@@ -247,5 +253,6 @@ extension SessionRepository: SessionDeleting {
                 throw DatabaseError.executionFailed(message: String(cString: sqlite3_errmsg(database.rawHandle)))
             }
         }
+        try artifactStore?.deleteArtifact(for: sessionID)
     }
 }

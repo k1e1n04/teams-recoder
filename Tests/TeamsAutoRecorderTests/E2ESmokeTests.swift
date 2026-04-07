@@ -8,6 +8,7 @@ final class E2ESmokeTests: XCTestCase {
 
         let db = try Database(path: temp.appendingPathComponent("e2e.sqlite").path)
         try db.migrate()
+        let artifactStore = SessionAudioArtifactStore(directory: temp)
 
         let orchestrator = RecorderOrchestrator(
             detector: MeetingDetector(config: .forTests),
@@ -17,7 +18,8 @@ final class E2ESmokeTests: XCTestCase {
                 liveCaptureFactory: { _ in nil }
             ),
             worker: TranscriptionWorker(transcriber: StubTranscriber(failuresBeforeSuccess: 0), maxRetries: 0),
-            repository: SessionRepository(database: db, fileManager: .default)
+            repository: SessionRepository(database: db, fileManager: .default, artifactStore: artifactStore),
+            artifactStore: artifactStore
         )
 
         let start = Date(timeIntervalSince1970: 0)
@@ -35,6 +37,7 @@ final class E2ESmokeTests: XCTestCase {
         let saved = try orchestrator.repository.fetchSession(sessionID: "session-0")
         XCTAssertEqual(saved?.sessionID, "session-0")
         XCTAssertEqual(saved?.transcriptText, "stub transcript")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: temp.appendingPathComponent("session-0-mixed.raw").path))
     }
 
     func testSavesSessionEvenWhenTranscriptionFails() async throws {
@@ -43,6 +46,7 @@ final class E2ESmokeTests: XCTestCase {
 
         let db = try Database(path: temp.appendingPathComponent("e2e.sqlite").path)
         try db.migrate()
+        let artifactStore = SessionAudioArtifactStore(directory: temp)
 
         let orchestrator = RecorderOrchestrator(
             detector: MeetingDetector(config: .forTests),
@@ -52,7 +56,8 @@ final class E2ESmokeTests: XCTestCase {
                 liveCaptureFactory: { _ in nil }
             ),
             worker: TranscriptionWorker(transcriber: StubTranscriber(failuresBeforeSuccess: 1), maxRetries: 0),
-            repository: SessionRepository(database: db, fileManager: .default)
+            repository: SessionRepository(database: db, fileManager: .default, artifactStore: artifactStore),
+            artifactStore: artifactStore
         )
 
         let start = Date(timeIntervalSince1970: 0)
@@ -72,6 +77,7 @@ final class E2ESmokeTests: XCTestCase {
         let saved = try orchestrator.repository.fetchSession(sessionID: "session-0")
         XCTAssertEqual(saved?.sessionID, "session-0")
         XCTAssertNotNil(saved)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("session-0-mixed.raw").path))
     }
 
     func testStartFailureSurfacesAsTranscriptionFailureEvent() async throws {
@@ -80,6 +86,7 @@ final class E2ESmokeTests: XCTestCase {
 
         let db = try Database(path: temp.appendingPathComponent("e2e.sqlite").path)
         try db.migrate()
+        let artifactStore = SessionAudioArtifactStore(directory: temp)
 
         let session = LiveCaptureSessionStub(startResult: .failure(StubError.forced), stopResult: .success(.init(teams: [], mic: [])))
         let orchestrator = RecorderOrchestrator(
@@ -90,7 +97,8 @@ final class E2ESmokeTests: XCTestCase {
                 liveCaptureFactory: { _ in session }
             ),
             worker: TranscriptionWorker(transcriber: StubTranscriber(failuresBeforeSuccess: 0), maxRetries: 0),
-            repository: SessionRepository(database: db, fileManager: .default)
+            repository: SessionRepository(database: db, fileManager: .default, artifactStore: artifactStore),
+            artifactStore: artifactStore
         )
 
         let event = await orchestrator.tick(

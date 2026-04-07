@@ -56,6 +56,29 @@ final class CaptureEngineTests: XCTestCase {
 
         XCTAssertThrowsError(try engine.start(sessionID: "live-fail"))
     }
+
+    func testStopFallsBackToMixingLiveInputsWhenRecordedMixIsAllZero() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let liveOutput = CapturedAudioSamples(
+            teams: [0.6, 0.2],
+            mic: [0.2, 0.6],
+            mixed: [0, 0]
+        )
+        let session = LiveCaptureSessionStub(stopResult: .success(liveOutput))
+        let engine = CaptureEngine(
+            mixer: AudioMixer(),
+            outputDirectory: dir,
+            liveCaptureFactory: { _ in session }
+        )
+
+        try engine.start(sessionID: "live-zero-mix")
+        let artifact = try engine.stop()
+        let body = try String(contentsOf: artifact.mixedAudioURL, encoding: .utf8)
+
+        XCTAssertEqual(body, "0.400000\n0.400000")
+    }
 }
 
 final class LiveCaptureSessionStub: LiveCaptureSession {
