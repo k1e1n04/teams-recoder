@@ -282,3 +282,32 @@ extension SessionRepository: SessionDeleting {
         try artifactStore?.deleteArtifact(for: sessionID)
     }
 }
+
+public protocol SessionFetchingByDate {
+    func fetchSessions(for date: Date) throws -> [SessionRecord]
+}
+
+extension SessionRepository: SessionFetchingByDate {
+    public func fetchSessions(for date: Date) throws -> [SessionRecord] {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = startOfDay.addingTimeInterval(86400)
+
+        let sql = """
+        SELECT session_id, started_at, ended_at, transcript_text, failure_stage, failure_reason, name
+        FROM sessions
+        WHERE started_at >= ? AND started_at < ?
+        ORDER BY started_at ASC;
+        """
+        let stmt = try database.prepare(sql)
+        defer { database.finalize(stmt) }
+        sqlite3_bind_double(stmt, 1, startOfDay.timeIntervalSince1970)
+        sqlite3_bind_double(stmt, 2, endOfDay.timeIntervalSince1970)
+
+        var result: [SessionRecord] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            result.append(rowToRecord(stmt))
+        }
+        return result
+    }
+}
