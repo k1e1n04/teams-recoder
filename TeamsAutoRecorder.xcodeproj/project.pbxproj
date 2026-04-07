@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0718D3538FD3351B7FCE573A /* TeamsWindowSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */; };
 		0954B63ABE167108494A615B /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E0F1E1512929AD5C6BCFB5 /* MenuBarController.swift */; };
+		0E0BC369150DF854F3AC12EF /* AppSupportDirectoryResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FE270A018DD92542567B4E9 /* AppSupportDirectoryResolver.swift */; };
 		1E6B86AA48FA6BCB22B04908 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3187CA4344D0C2789FDBB2A /* AppState.swift */; };
 		2FC63D5B945056AEA4C1001A /* FallbackAudioSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */; };
 		40EDC1295F63C6BD1A99D580 /* DefaultWhisperInferencer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DCADF51CAD7B23159EA763A /* DefaultWhisperInferencer.swift */; };
@@ -52,6 +53,7 @@
 		88033F4EE313D5855BB38E9B /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
 		955555EC777C1334BF30CCFF /* AudioNormalizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioNormalizing.swift; sourceTree = "<group>"; };
 		97EC698A57C0B8AAE5F97C85 /* AudioNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioNormalizer.swift; sourceTree = "<group>"; };
+		9FE270A018DD92542567B4E9 /* AppSupportDirectoryResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSupportDirectoryResolver.swift; sourceTree = "<group>"; };
 		A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsWindowSignalProvider.swift; sourceTree = "<group>"; };
 		ABB8060637C69A37D104CA69 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		C9286895439BECFE9DA08D98 /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginManager.swift; sourceTree = "<group>"; };
@@ -130,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				F3187CA4344D0C2789FDBB2A /* AppState.swift */,
+				9FE270A018DD92542567B4E9 /* AppSupportDirectoryResolver.swift */,
 				ABB8060637C69A37D104CA69 /* DashboardViewModel.swift */,
 				C9286895439BECFE9DA08D98 /* LaunchAtLoginManager.swift */,
 				04058DB234ED210257C5ACAB /* Main.swift */,
@@ -256,6 +259,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1E6B86AA48FA6BCB22B04908 /* AppState.swift in Sources */,
+				0E0BC369150DF854F3AC12EF /* AppSupportDirectoryResolver.swift in Sources */,
 				849F5F56F1F6B36993F0C071 /* AudioMixer.swift in Sources */,
 				BD3539E4A74B6324E7F913FA /* AudioNormalizer.swift in Sources */,
 				8499255F1C5DE36CC86CF814 /* AudioNormalizing.swift in Sources */,
