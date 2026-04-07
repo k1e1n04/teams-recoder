@@ -9,13 +9,25 @@ public struct SessionRecord: Codable, Equatable, Identifiable {
     public let startedAt: Double
     public let endedAt: Double
     public let transcriptText: String
+    public let failureStage: TranscriptionFailureStage?
+    public let failureReason: String?
     public var name: String?
 
-    public init(sessionID: String, startedAt: Double, endedAt: Double, transcriptText: String, name: String? = nil) {
+    public init(
+        sessionID: String,
+        startedAt: Double,
+        endedAt: Double,
+        transcriptText: String,
+        failureStage: TranscriptionFailureStage? = nil,
+        failureReason: String? = nil,
+        name: String? = nil
+    ) {
         self.sessionID = sessionID
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.transcriptText = transcriptText
+        self.failureStage = failureStage
+        self.failureReason = failureReason
         self.name = name
     }
 }
@@ -36,12 +48,15 @@ public final class SessionRepository {
 
     public func saveSession(_ record: SessionRecord) throws {
         let sql = """
-        INSERT INTO sessions (session_id, started_at, ended_at, transcript_text, name)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO sessions (session_id, started_at, ended_at, transcript_text, failure_stage, failure_reason, name)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(session_id) DO UPDATE SET
             started_at=excluded.started_at,
             ended_at=excluded.ended_at,
-            transcript_text=excluded.transcript_text;
+            transcript_text=excluded.transcript_text,
+            failure_stage=excluded.failure_stage,
+            failure_reason=excluded.failure_reason,
+            name=excluded.name;
         """
 
         let stmt = try database.prepare(sql)
@@ -51,7 +66,9 @@ public final class SessionRepository {
         sqlite3_bind_double(stmt, 2, record.startedAt)
         sqlite3_bind_double(stmt, 3, record.endedAt)
         bindText(record.transcriptText, to: stmt, index: 4)
-        bindOptionalText(record.name, to: stmt, index: 5)
+        bindOptionalText(record.failureStage?.rawValue, to: stmt, index: 5)
+        bindOptionalText(record.failureReason, to: stmt, index: 6)
+        bindOptionalText(record.name, to: stmt, index: 7)
 
         guard sqlite3_step(stmt) == SQLITE_DONE else {
             throw DatabaseError.executionFailed(message: String(cString: sqlite3_errmsg(database.rawHandle)))
@@ -63,7 +80,7 @@ public final class SessionRepository {
 
     public func fetchSession(sessionID: String) throws -> SessionRecord? {
         let sql = """
-        SELECT session_id, started_at, ended_at, transcript_text, name
+        SELECT session_id, started_at, ended_at, transcript_text, failure_stage, failure_reason, name
         FROM sessions WHERE session_id = ? LIMIT 1;
         """
 
@@ -80,7 +97,7 @@ public final class SessionRepository {
 
     public func fetchRecentSessions(limit: Int) throws -> [SessionRecord] {
         let sql = """
-        SELECT session_id, started_at, ended_at, transcript_text, name
+        SELECT session_id, started_at, ended_at, transcript_text, failure_stage, failure_reason, name
         FROM sessions
         ORDER BY started_at DESC
         LIMIT ?;
@@ -102,10 +119,24 @@ public final class SessionRepository {
         let startedAt = sqlite3_column_double(stmt, 1)
         let endedAt = sqlite3_column_double(stmt, 2)
         let text = String(cString: sqlite3_column_text(stmt, 3))
-        let name: String? = sqlite3_column_type(stmt, 4) != SQLITE_NULL
-            ? String(cString: sqlite3_column_text(stmt, 4))
+        let failureStage: TranscriptionFailureStage? = sqlite3_column_type(stmt, 4) != SQLITE_NULL
+            ? TranscriptionFailureStage(rawValue: String(cString: sqlite3_column_text(stmt, 4)))
             : nil
-        return SessionRecord(sessionID: id, startedAt: startedAt, endedAt: endedAt, transcriptText: text, name: name)
+        let failureReason: String? = sqlite3_column_type(stmt, 5) != SQLITE_NULL
+            ? String(cString: sqlite3_column_text(stmt, 5))
+            : nil
+        let name: String? = sqlite3_column_type(stmt, 6) != SQLITE_NULL
+            ? String(cString: sqlite3_column_text(stmt, 6))
+            : nil
+        return SessionRecord(
+            sessionID: id,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            transcriptText: text,
+            failureStage: failureStage,
+            failureReason: failureReason,
+            name: name
+        )
     }
 
     public func exportTranscript(sessionID: String, outputDirectory: URL) throws -> TranscriptExportURLs {

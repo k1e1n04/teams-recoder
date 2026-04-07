@@ -31,7 +31,8 @@ public protocol AudioTranscribing {
 
 public enum WhisperTranscriberError: Error {
     case modelLoadFailed(String)
-    case transcriptionFailed(String)
+    case audioNormalizationFailed(String)
+    case inferenceFailed(String)
 }
 
 public protocol WhisperInferencing {
@@ -64,8 +65,14 @@ public final class WhisperKitTranscriber: AudioTranscribing {
             throw WhisperTranscriberError.modelLoadFailed(String(describing: error))
         }
 
+        let normalized: NormalizedAudio
         do {
-            let normalized = try normalizer.normalize(audioURL: audioURL)
+            normalized = try normalizer.normalize(audioURL: audioURL)
+        } catch {
+            throw WhisperTranscriberError.audioNormalizationFailed(String(describing: error))
+        }
+
+        do {
             let segments = try await inferencer.transcribe(
                 samples: normalized.samples,
                 sampleRate: normalized.sampleRate,
@@ -77,7 +84,7 @@ public final class WhisperKitTranscriber: AudioTranscribing {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return TranscriptOutput(sessionID: sessionID, fullText: fullText, segments: segments)
         } catch {
-            throw WhisperTranscriberError.transcriptionFailed(String(describing: error))
+            throw WhisperTranscriberError.inferenceFailed(String(describing: error))
         }
     }
 }

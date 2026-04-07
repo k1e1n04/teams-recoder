@@ -3,7 +3,7 @@ import Foundation
 public final class RecorderOrchestrator {
     private enum SessionFinishOutcome {
         case success
-        case failure(String)
+        case failure(TranscriptionFailure)
     }
 
     public let repository: SessionRepository
@@ -71,8 +71,8 @@ public final class RecorderOrchestrator {
             switch outcome {
             case .success:
                 return .stopped(sessionID: sessionID)
-            case let .failure(reason):
-                return .transcriptionFailed(sessionID: sessionID, reason: reason)
+            case let .failure(failure):
+                return .transcriptionFailed(sessionID: sessionID, reason: failure.description)
             }
 
         case .fallbackToNotifyOnly:
@@ -96,8 +96,8 @@ public final class RecorderOrchestrator {
         switch outcome {
         case .success:
             return .stopped(sessionID: sessionID)
-        case let .failure(reason):
-            return .transcriptionFailed(sessionID: sessionID, reason: reason)
+        case let .failure(failure):
+            return .transcriptionFailed(sessionID: sessionID, reason: failure.description)
         }
     }
 
@@ -105,7 +105,11 @@ public final class RecorderOrchestrator {
         _ = appStateMachine.startTranscription()
         guard let artifact = try? captureEngine.stop() else {
             appStateMachine.reset()
-            return .failure("failed to finalize captured audio")
+            return .failure(.init(
+                attempts: 0,
+                stage: .captureFinalize,
+                description: "failed to finalize captured audio"
+            ))
         }
 
         let result = await worker.run(job: .init(sessionID: sessionID, audioURL: artifact.mixedAudioURL))
@@ -118,7 +122,16 @@ public final class RecorderOrchestrator {
                 endedAt: now.timeIntervalSince1970,
                 transcriptText: transcript.fullText
             )
-            try? repository.saveSession(record)
+            do {
+                try repository.saveSession(record)
+            } catch {
+                appStateMachine.reset()
+                return .failure(.init(
+                    attempts: 0,
+                    stage: .sessionSave,
+                    description: "sessionSaveFailed(\(String(describing: error)))"
+                ))
+            }
             _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
             appStateMachine.reset()
             return .success
@@ -128,12 +141,23 @@ public final class RecorderOrchestrator {
                 sessionID: sessionID,
                 startedAt: startedAt,
                 endedAt: now.timeIntervalSince1970,
-                transcriptText: "[transcription failed] \(failure.description)"
+                transcriptText: "[transcription failed] \(failure.description)",
+                failureStage: failure.stage,
+                failureReason: failure.description
             )
-            try? repository.saveSession(record)
+            do {
+                try repository.saveSession(record)
+            } catch {
+                appStateMachine.reset()
+                return .failure(.init(
+                    attempts: 0,
+                    stage: .sessionSave,
+                    description: "sessionSaveFailed(\(String(describing: error)))"
+                ))
+            }
             _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
             appStateMachine.reset()
-            return .failure(failure.description)
+            return .failure(failure)
         }
     }
 }

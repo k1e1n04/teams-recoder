@@ -26,7 +26,9 @@ public final class Database {
             session_id TEXT PRIMARY KEY,
             started_at REAL NOT NULL,
             ended_at REAL NOT NULL,
-            transcript_text TEXT NOT NULL
+            transcript_text TEXT NOT NULL,
+            failure_stage TEXT,
+            failure_reason TEXT
         );
         """)
 
@@ -51,6 +53,8 @@ public final class Database {
 
         // Migration: add name column if it doesn't exist yet
         try? execute(sql: "ALTER TABLE sessions ADD COLUMN name TEXT;")
+        try? execute(sql: "ALTER TABLE sessions ADD COLUMN failure_stage TEXT;")
+        try? execute(sql: "ALTER TABLE sessions ADD COLUMN failure_reason TEXT;")
     }
 
     public func execute(sql: String) throws {

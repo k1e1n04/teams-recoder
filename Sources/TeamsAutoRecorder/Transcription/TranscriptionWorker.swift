@@ -10,9 +10,25 @@ public struct TranscriptionJob: Equatable {
     }
 }
 
+public enum TranscriptionFailureStage: String, Codable, Equatable {
+    case unknown
+    case captureFinalize
+    case modelResolve
+    case audioNormalize
+    case whisperInfer
+    case sessionSave
+}
+
 public struct TranscriptionFailure: Equatable {
     public let attempts: Int
+    public let stage: TranscriptionFailureStage
     public let description: String
+
+    public init(attempts: Int, stage: TranscriptionFailureStage, description: String) {
+        self.attempts = attempts
+        self.stage = stage
+        self.description = description
+    }
 }
 
 public enum TranscriptionResult: Equatable {
@@ -37,11 +53,24 @@ public struct TranscriptionWorker {
                 return .success(output)
             } catch {
                 if attempt == totalAttempts {
-                    return .failure(.init(attempts: totalAttempts, description: String(describing: error)))
+                    return .failure(Self.classify(error, attempts: totalAttempts))
                 }
             }
         }
 
-        return .failure(.init(attempts: totalAttempts, description: "unknown"))
+        return .failure(.init(attempts: totalAttempts, stage: .unknown, description: "unknown"))
+    }
+
+    private static func classify(_ error: Error, attempts: Int) -> TranscriptionFailure {
+        switch error {
+        case let WhisperTranscriberError.modelLoadFailed(description):
+            return .init(attempts: attempts, stage: .modelResolve, description: description)
+        case let WhisperTranscriberError.audioNormalizationFailed(description):
+            return .init(attempts: attempts, stage: .audioNormalize, description: description)
+        case let WhisperTranscriberError.inferenceFailed(description):
+            return .init(attempts: attempts, stage: .whisperInfer, description: description)
+        default:
+            return .init(attempts: attempts, stage: .unknown, description: String(describing: error))
+        }
     }
 }

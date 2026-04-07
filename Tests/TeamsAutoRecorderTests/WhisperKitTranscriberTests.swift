@@ -55,7 +55,7 @@ final class WhisperKitTranscriberTests: XCTestCase {
             _ = try await transcriber.transcribe(sessionID: "s1", audioURL: URL(fileURLWithPath: "/tmp/audio.raw"))
             XCTFail("Expected failure")
         } catch let error as WhisperTranscriberError {
-            if case .transcriptionFailed = error {
+            if case .audioNormalizationFailed = error {
                 XCTAssertTrue(true)
             } else {
                 XCTFail("Wrong error type")
@@ -77,7 +77,7 @@ final class WhisperKitTranscriberTests: XCTestCase {
             _ = try await transcriber.transcribe(sessionID: "s1", audioURL: URL(fileURLWithPath: "/tmp/audio.raw"))
             XCTFail("Expected failure")
         } catch let error as WhisperTranscriberError {
-            if case .transcriptionFailed = error {
+            if case .inferenceFailed = error {
                 XCTAssertTrue(true)
             } else {
                 XCTFail("Wrong error type")
