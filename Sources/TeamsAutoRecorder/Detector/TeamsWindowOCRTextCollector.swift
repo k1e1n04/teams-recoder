@@ -53,6 +53,7 @@ public final class TeamsWindowOCRTextCollector {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = false
+        request.recognitionLanguages = ["ja-JP", "en-US"]
 
         let handler = VNImageRequestHandler(cgImage: image, options: [:])
         do {
@@ -101,7 +102,7 @@ public final class TeamsWindowOCRTextCollector {
         if let bounds = info[kCGWindowBounds as String] as? [String: Any],
            let width = bounds["Width"] as? Double,
            let height = bounds["Height"] as? Double,
-           width < 200 || height < 120 {
+           width < 200 || height < 40 {
             return false
         }
 
