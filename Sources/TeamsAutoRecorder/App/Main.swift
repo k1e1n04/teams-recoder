@@ -893,9 +893,13 @@ private final class RuntimeController: ObservableObject {
             try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
 
             let orchestrator = try AppBootstrap().makeDefaultOrchestrator(storageDirectory: base)
-            let windowProvider = TeamsWindowSignalProvider(holdSeconds: 8, evaluator: { _ in
+            let teamsWindowProvider = TeamsWindowSignalProvider(holdSeconds: 8, evaluator: { _ in
                 self.hasVisibleTeamsWindow()
             })
+            let slackWindowProvider = TeamsWindowSignalProvider(holdSeconds: 8, evaluator: { _ in
+                self.hasVisibleSlackHuddle()
+            })
+            let windowProvider = CompositeWindowSignalProvider(providers: [teamsWindowProvider, slackWindowProvider])
             let windowFallbackProvider = TeamsAudioSignalProvider { date in
                 windowProvider.isMeetingWindowActive(at: date)
             }
@@ -982,6 +986,21 @@ private final class RuntimeController: ObservableObject {
             accessibilityTrusted: accessibilityTrusted,
             visibleTexts: visibleTexts
         )
+    }
+
+    private func hasVisibleSlackHuddle() -> Bool {
+        let bundleID = "com.tinyspeck.slackmacgap"
+        let runningApps = NSRunningApplication
+            .runningApplications(withBundleIdentifier: bundleID)
+            .filter { !$0.isTerminated }
+        guard !runningApps.isEmpty else { return false }
+
+        guard AXIsProcessTrusted() else { return false }
+
+        let visibleTexts = runningApps.flatMap { app in
+            accessibilityTextCollector.collectTexts(for: app.processIdentifier)
+        }
+        return SlackHuddleWindowClassifier.allKeywordsExist(in: visibleTexts)
     }
 
     private func consume(_ event: MeetingDetectorEvent) {
