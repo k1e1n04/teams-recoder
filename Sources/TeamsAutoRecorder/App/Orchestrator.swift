@@ -13,8 +13,6 @@ public final class RecorderOrchestrator {
     private let worker: TranscriptionWorker
     private var appStateMachine = AppStateMachine()
     private var currentSessionStartedAt: Date?
-    private var manualSessionCounter = 0
-
     public var isRecording: Bool {
         if case .recording = appStateMachine.state { return true }
         return false
@@ -72,8 +70,7 @@ public final class RecorderOrchestrator {
     }
 
     public func startManualRecording(now: Date = Date()) throws {
-        manualSessionCounter += 1
-        let sessionID = "manual-\(manualSessionCounter)"
+        let sessionID = "manual-\(Int(now.timeIntervalSince1970))"
         guard appStateMachine.startRecording(sessionID: sessionID, startedAt: now) else { return }
         currentSessionStartedAt = now
         try captureEngine.start(sessionID: sessionID)

@@ -52,7 +52,6 @@ public final class MeetingDetector {
     private var uiStreakSeconds = 0
     private var stopStreakSeconds = 0
     private var audioWindow: [Bool] = []
-    private var sessionCounter = 0
     private var falsePositivesByDay: [String: Int] = [:]
 
     public init(config: MeetingDetectorConfig = .init()) {
@@ -76,8 +75,7 @@ public final class MeetingDetector {
         switch mode {
         case .idle:
             if uiStreakSeconds >= config.startUISeconds && currentAudioRatio >= config.audioRequiredRatio {
-                sessionCounter += 1
-                let sessionID = "session-\(sessionCounter)"
+                let sessionID = "session-\(Int(timestamp.timeIntervalSince1970))"
                 mode = .recording(sessionID: sessionID, startedAt: timestamp)
                 stopStreakSeconds = 0
                 return .started(sessionID: sessionID)
