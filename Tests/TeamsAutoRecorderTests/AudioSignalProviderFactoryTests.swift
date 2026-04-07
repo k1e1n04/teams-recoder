@@ -2,13 +2,13 @@ import XCTest
 @testable import TeamsAutoRecorder
 
 final class AudioSignalProviderFactoryTests: XCTestCase {
-    func testUsesMicrophoneProviderWhenAvailable() {
+    func testUsesFallbackWhenMicrophoneIsInactive() {
         let provider = AudioSignalProviderFactory.make(
             microphoneProvider: ConstantAudioProvider(value: false),
             windowFallbackProvider: ConstantAudioProvider(value: true)
         )
 
-        XCTAssertFalse(provider.isAudioActive(at: Date()))
+        XCTAssertTrue(provider.isAudioActive(at: Date()))
     }
 
     func testUsesWindowFallbackProviderWhenMicrophoneProviderUnavailable() {

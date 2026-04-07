@@ -6,7 +6,10 @@ public enum AudioSignalProviderFactory {
         windowFallbackProvider: TeamsAudioSignalProviding
     ) -> TeamsAudioSignalProviding {
         if let microphoneProvider {
-            return microphoneProvider
+            return FallbackAudioSignalProvider(
+                primary: microphoneProvider,
+                fallback: windowFallbackProvider
+            )
         }
         return windowFallbackProvider
     }
