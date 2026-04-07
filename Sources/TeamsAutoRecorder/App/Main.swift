@@ -374,15 +374,19 @@ private struct SessionsPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SessionsPanelHeader(count: viewModel.sessions.count)
+            SessionsPanelHeader(viewModel: viewModel)
             Divider().background(Color.obsidianBorder)
 
-            if viewModel.sessions.isEmpty {
-                EmptySessionsView()
+            if viewModel.displayedSessions.isEmpty {
+                if viewModel.isSearchActive {
+                    SearchEmptyStateView(query: viewModel.searchQuery)
+                } else {
+                    EmptySessionsView()
+                }
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(viewModel.sessions, id: \.sessionID) { session in
+                        ForEach(viewModel.displayedSessions, id: \.sessionID) { session in
                             if renamingSessionID == session.sessionID {
                                 InlineRenameRow(
                                     session: session,
@@ -413,8 +417,8 @@ private struct SessionsPanel: View {
                 session: session,
                 onRename: { newName in
                     viewModel.renameSession(sessionID: session.sessionID, name: newName.isEmpty ? nil : newName)
-                    if let idx = viewModel.sessions.firstIndex(where: { $0.sessionID == session.sessionID }) {
-                        selectedSession = viewModel.sessions[idx]
+                    if let idx = viewModel.displayedSessions.firstIndex(where: { $0.sessionID == session.sessionID }) {
+                        selectedSession = viewModel.displayedSessions[idx]
                     }
                 },
                 onDelete: {
@@ -427,35 +431,70 @@ private struct SessionsPanel: View {
 }
 
 private struct SessionsPanelHeader: View {
-    let count: Int
+    @ObservedObject var viewModel: DashboardViewModel
 
     var body: some View {
-        HStack(alignment: .lastTextBaseline) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("会議記録")
-                    .font(.system(size: 20, weight: .bold))
+        VStack(spacing: 0) {
+            HStack(alignment: .lastTextBaseline) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("会議記録")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(Color.inkPrimary)
+                    Text("録音・文字起こし済みセッション")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.inkMuted)
+                }
+                Spacer()
+                let count = viewModel.displayedSessions.count
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.inkMuted)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 3)
+                        .background(Color.obsidianSurface)
+                        .overlay(
+                            Capsule().strokeBorder(Color.obsidianBorder, lineWidth: 1)
+                        )
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 26)
+            .padding(.bottom, 14)
+
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.inkMuted)
+                TextField("検索ワードを入力…", text: $viewModel.searchQuery)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.inkPrimary)
-                Text("録音・文字起こし済みセッション")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(Color.inkMuted)
+                    .onSubmit { viewModel.search(query: viewModel.searchQuery) }
+                if viewModel.isSearchActive {
+                    Button {
+                        viewModel.searchQuery = ""
+                        viewModel.clearSearch()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.inkMuted)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            Spacer()
-            if count > 0 {
-                Text("\(count)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.inkMuted)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 3)
-                    .background(Color.obsidianSurface)
-                    .overlay(
-                        Capsule().strokeBorder(Color.obsidianBorder, lineWidth: 1)
-                    )
-                    .clipShape(Capsule())
-            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.obsidianSurface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.obsidianBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .padding(.horizontal, 28)
+            .padding(.bottom, 14)
         }
-        .padding(.horizontal, 28)
-        .padding(.top, 26)
-        .padding(.bottom, 18)
     }
 }
 
@@ -472,6 +511,30 @@ private struct EmptySessionsView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.inkMuted)
                 Text("Teams 会議が検知されると\n自動的に録音・文字起こしを行います")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.inkDim)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.bottom, 80)
+    }
+}
+
+private struct SearchEmptyStateView: View {
+    let query: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 44, weight: .ultraLight))
+                .foregroundStyle(Color.inkDim)
+            VStack(spacing: 6) {
+                Text("該当なし")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.inkMuted)
+                Text("\"\(query)\" に一致するセッションが見つかりません")
                     .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.inkDim)
                     .multilineTextAlignment(.center)
@@ -816,6 +879,7 @@ private enum DashboardFactory {
                 sessionProvider: repository,
                 sessionDeleter: repository,
                 sessionRenamer: repository,
+                sessionSearcher: repository,
                 launchAtLoginManager: SystemLaunchAtLoginManager()
             )
         } catch {
