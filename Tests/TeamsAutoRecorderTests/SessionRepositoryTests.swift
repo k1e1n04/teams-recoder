@@ -139,12 +139,12 @@ final class SessionRepositoryTests: XCTestCase {
         )
 
         try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello"))
-        let rawURL = dir.appendingPathComponent("s1-mixed.raw")
-        try "0.1\n0.2".write(to: rawURL, atomically: true, encoding: .utf8)
+        let wavURL = dir.appendingPathComponent("s1-mixed.wav")
+        try "dummy".write(to: wavURL, atomically: true, encoding: .utf8)
 
         try repo.deleteSession(sessionID: "s1")
 
-        XCTAssertFalse(FileManager.default.fileExists(atPath: rawURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: wavURL.path))
         XCTAssertNil(try repo.fetchSession(sessionID: "s1"))
     }
 
@@ -164,15 +164,15 @@ final class SessionRepositoryTests: XCTestCase {
             failureReason: "timeout"
         ))
 
-        let rawURL = dir.appendingPathComponent("stale-failure-mixed.raw")
-        try "0.1\n0.2".write(to: rawURL, atomically: true, encoding: .utf8)
+        let wavURL = dir.appendingPathComponent("stale-failure-mixed.wav")
+        try "dummy".write(to: wavURL, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes(
             [.modificationDate: Date().addingTimeInterval(-(8 * 24 * 60 * 60))],
-            ofItemAtPath: rawURL.path
+            ofItemAtPath: wavURL.path
         )
 
         _ = try AppBootstrap().makeDefaultOrchestrator(storageDirectory: dir)
 
-        XCTAssertFalse(FileManager.default.fileExists(atPath: rawURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: wavURL.path))
     }
 }

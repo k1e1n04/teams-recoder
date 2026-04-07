@@ -37,7 +37,7 @@ final class E2ESmokeTests: XCTestCase {
         let saved = try orchestrator.repository.fetchSession(sessionID: "session-0")
         XCTAssertEqual(saved?.sessionID, "session-0")
         XCTAssertEqual(saved?.transcriptText, "stub transcript")
-        XCTAssertFalse(FileManager.default.fileExists(atPath: temp.appendingPathComponent("session-0-mixed.raw").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: temp.appendingPathComponent("session-0-mixed.wav").path))
     }
 
     func testSavesSessionEvenWhenTranscriptionFails() async throws {
@@ -77,7 +77,7 @@ final class E2ESmokeTests: XCTestCase {
         let saved = try orchestrator.repository.fetchSession(sessionID: "session-0")
         XCTAssertEqual(saved?.sessionID, "session-0")
         XCTAssertNotNil(saved)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("session-0-mixed.raw").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("session-0-mixed.wav").path))
     }
 
     func testStartFailureSurfacesAsTranscriptionFailureEvent() async throws {
