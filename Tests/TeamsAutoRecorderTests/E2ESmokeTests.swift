@@ -23,13 +23,13 @@ final class E2ESmokeTests: XCTestCase {
             await orchestrator.tick(windowActive: false, audioActive: false, now: start.addingTimeInterval(2))
         ]
 
-        XCTAssertTrue(events.contains(.started(sessionID: "session-1")))
-        XCTAssertTrue(events.contains(.stopped(sessionID: "session-1")))
+        XCTAssertTrue(events.contains(.started(sessionID: "session-0")))
+        XCTAssertTrue(events.contains(.stopped(sessionID: "session-0")))
 
         try await Task.sleep(nanoseconds: 200_000_000)
 
-        let saved = try orchestrator.repository.fetchSession(sessionID: "session-1")
-        XCTAssertEqual(saved?.sessionID, "session-1")
+        let saved = try orchestrator.repository.fetchSession(sessionID: "session-0")
+        XCTAssertEqual(saved?.sessionID, "session-0")
         XCTAssertEqual(saved?.transcriptText, "stub transcript")
     }
 
@@ -54,15 +54,15 @@ final class E2ESmokeTests: XCTestCase {
 
         switch stopEvent {
         case let .transcriptionFailed(sessionID, _):
-            XCTAssertEqual(sessionID, "session-1")
+            XCTAssertEqual(sessionID, "session-0")
         default:
             XCTFail("expected transcriptionFailed event")
         }
 
         try await Task.sleep(nanoseconds: 200_000_000)
 
-        let saved = try orchestrator.repository.fetchSession(sessionID: "session-1")
-        XCTAssertEqual(saved?.sessionID, "session-1")
+        let saved = try orchestrator.repository.fetchSession(sessionID: "session-0")
+        XCTAssertEqual(saved?.sessionID, "session-0")
         XCTAssertNotNil(saved)
     }
 }

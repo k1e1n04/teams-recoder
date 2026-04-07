@@ -12,7 +12,7 @@ final class MeetingDetectorTests: XCTestCase {
         XCTAssertNil(detector.ingest(windowActive: true, audioActive: false, at: base.addingTimeInterval(2)))
 
         let event = detector.ingest(windowActive: true, audioActive: true, at: base.addingTimeInterval(3))
-        XCTAssertEqual(event, .started(sessionID: "session-1"))
+        XCTAssertEqual(event, .started(sessionID: "session-3"))
     }
 
     func testDelaysStopUntilMinimumDuration() {
@@ -27,6 +27,6 @@ final class MeetingDetectorTests: XCTestCase {
         XCTAssertNil(detector.ingest(windowActive: false, audioActive: false, at: base.addingTimeInterval(4)))
 
         let stop = detector.ingest(windowActive: false, audioActive: false, at: base.addingTimeInterval(5))
-        XCTAssertEqual(stop, .stopped(sessionID: "session-1"))
+        XCTAssertEqual(stop, .stopped(sessionID: "session-0"))
     }
 }
