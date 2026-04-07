@@ -9,26 +9,32 @@ public final class DashboardViewModel: ObservableObject {
     @Published public private(set) var isSearchActive: Bool = false
     @Published public var searchQuery: String = ""
     @Published public private(set) var errorMessage: String?
+    @Published public private(set) var mcpServerEnabled: Bool
+    public var mcpServerPort: Int { mcpServerController?.port ?? 3456 }
 
     private let sessionProvider: SessionListing
     private let sessionDeleter: SessionDeleting?
     private let sessionRenamer: SessionRenaming?
     private let sessionSearcher: SessionSearching?
     private let launchAtLoginManager: LaunchAtLoginManaging
+    private let mcpServerController: MCPServerControlling?
 
     public init(
         sessionProvider: SessionListing,
         sessionDeleter: SessionDeleting? = nil,
         sessionRenamer: SessionRenaming? = nil,
         sessionSearcher: SessionSearching? = nil,
-        launchAtLoginManager: LaunchAtLoginManaging
+        launchAtLoginManager: LaunchAtLoginManaging,
+        mcpServerController: MCPServerControlling? = nil
     ) {
         self.sessionProvider = sessionProvider
         self.sessionDeleter = sessionDeleter
         self.sessionRenamer = sessionRenamer
         self.sessionSearcher = sessionSearcher
         self.launchAtLoginManager = launchAtLoginManager
+        self.mcpServerController = mcpServerController
         self.launchAtLoginEnabled = launchAtLoginManager.isEnabled
+        self.mcpServerEnabled = mcpServerController?.isRunning ?? false
     }
 
     public func loadSessions(limit: Int = 100) {
@@ -83,6 +89,24 @@ public final class DashboardViewModel: ObservableObject {
             errorMessage = nil
         } catch {
             errorMessage = "セッションの削除に失敗しました: \(error)"
+        }
+    }
+
+    public func setMCPServerEnabled(_ enabled: Bool) {
+        guard let controller = mcpServerController else { return }
+        if enabled {
+            do {
+                try controller.start()
+                mcpServerEnabled = controller.isRunning
+                errorMessage = nil
+            } catch {
+                mcpServerEnabled = false
+                errorMessage = "MCP サーバーの起動に失敗しました: \(error)"
+            }
+        } else {
+            controller.stop()
+            mcpServerEnabled = false
+            errorMessage = nil
         }
     }
 
