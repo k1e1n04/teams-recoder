@@ -45,7 +45,7 @@ public final class WhisperKitTranscriber: AudioTranscribing {
     private let inferencer: WhisperInferencing
 
     public init(
-        modelName: String = "medium",
+        modelName: String = "small",
         modelManager: WhisperModelManaging,
         normalizer: AudioNormalizing,
         inferencer: WhisperInferencing

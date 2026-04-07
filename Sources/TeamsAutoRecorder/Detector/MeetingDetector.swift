@@ -37,6 +37,7 @@ public struct MeetingDetectorConfig: Equatable, Sendable {
 public enum MeetingDetectorEvent: Equatable, Sendable {
     case started(sessionID: String)
     case stopped(sessionID: String)
+    case transcriptionFailed(sessionID: String, reason: String)
     case fallbackToNotifyOnly
 }
 

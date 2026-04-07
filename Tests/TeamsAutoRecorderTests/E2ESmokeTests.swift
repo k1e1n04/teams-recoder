@@ -50,7 +50,14 @@ final class E2ESmokeTests: XCTestCase {
         let start = Date(timeIntervalSince1970: 0)
         _ = await orchestrator.tick(windowActive: true, audioActive: true, now: start)
         _ = await orchestrator.tick(windowActive: true, audioActive: true, now: start.addingTimeInterval(1))
-        _ = await orchestrator.tick(windowActive: false, audioActive: false, now: start.addingTimeInterval(2))
+        let stopEvent = await orchestrator.tick(windowActive: false, audioActive: false, now: start.addingTimeInterval(2))
+
+        switch stopEvent {
+        case let .transcriptionFailed(sessionID, _):
+            XCTAssertEqual(sessionID, "session-1")
+        default:
+            XCTFail("expected transcriptionFailed event")
+        }
 
         try await Task.sleep(nanoseconds: 200_000_000)
 

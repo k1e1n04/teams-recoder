@@ -44,14 +44,20 @@ private struct DashboardView: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("検知状態")
+                    Text("今の状態")
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundStyle(.secondary)
                     Spacer()
                     Text(runtimeController.statusText)
                         .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(runtimeController.statusText == "録音中" ? .red : .primary)
+                        .foregroundStyle(runtimeController.statusText.contains("録音中") ? .red : .primary)
                 }
+                Text("最後の結果")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                Text(runtimeController.lastResultText)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(runtimeController.lastResultText.contains("失敗") ? .red : .secondary)
 
                 Button(action: { runtimeController.toggleManualRecording() }) {
                     Label(
@@ -158,6 +164,7 @@ private final class FallbackLaunchAtLoginManager: LaunchAtLoginManaging {
 private final class RuntimeController: ObservableObject {
     @Published private(set) var statusText: String = "待機中"
     @Published private(set) var isManuallyRecording: Bool = false
+    @Published private(set) var lastResultText: String = "まだありません"
     private let accessibilityMissingStatus = "権限不足: アクセシビリティ"
 
     private var runtime: RecorderRuntime?
@@ -304,8 +311,15 @@ private final class RuntimeController: ObservableObject {
         case let .started(sessionID):
             statusText = "録音中"
             notificationSink?.sendSilent(message: "Teams 会議を検知して録音を開始しました (\(sessionID))")
-        case .stopped:
+        case let .stopped(sessionID):
             statusText = "待機中"
+            lastResultText = "保存完了 (\(sessionID))"
+            onSessionSaved?()
+        case let .transcriptionFailed(sessionID, reason):
+            statusText = "待機中"
+            let userVisibleReason = TranscriptionFailureMessageFormatter.userVisibleMessage(from: reason)
+            lastResultText = "文字起こし失敗 (\(sessionID)): \(userVisibleReason)"
+            notificationSink?.sendSilent(message: "文字起こし失敗: \(sessionID) \(reason)")
             onSessionSaved?()
         case .fallbackToNotifyOnly:
             statusText = "通知のみ"
@@ -315,11 +329,13 @@ private final class RuntimeController: ObservableObject {
     func toggleManualRecording() {
         if isManuallyRecording {
             isManuallyRecording = false
-            statusText = "文字起こし中..."
+            statusText = "文字起こし中"
             Task { @MainActor in
-                await self.runtime?.stopManualRecording()
-                self.statusText = "待機中"
-                self.onSessionSaved?()
+                if let event = await self.runtime?.stopManualRecording() {
+                    self.consume(event)
+                } else {
+                    self.statusText = "待機中"
+                }
             }
         } else {
             do {

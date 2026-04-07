@@ -1,6 +1,11 @@
 import Foundation
 
 public final class RecorderOrchestrator {
+    private enum SessionFinishOutcome {
+        case success
+        case failure(String)
+    }
+
     public let repository: SessionRepository
 
     private let detector: MeetingDetector
@@ -50,11 +55,19 @@ public final class RecorderOrchestrator {
             return event
 
         case let .stopped(sessionID):
-            await finishSession(sessionID: sessionID, now: now)
-            return .stopped(sessionID: sessionID)
+            let outcome = await finishSession(sessionID: sessionID, now: now)
+            switch outcome {
+            case .success:
+                return .stopped(sessionID: sessionID)
+            case let .failure(reason):
+                return .transcriptionFailed(sessionID: sessionID, reason: reason)
+            }
 
         case .fallbackToNotifyOnly:
             return .fallbackToNotifyOnly
+
+        case .transcriptionFailed:
+            return nil
         }
     }
 
@@ -66,16 +79,22 @@ public final class RecorderOrchestrator {
         try captureEngine.start(sessionID: sessionID)
     }
 
-    public func stopManualRecording(now: Date = Date()) async {
-        guard case let .recording(sessionID) = appStateMachine.state else { return }
-        await finishSession(sessionID: sessionID, now: now)
+    public func stopManualRecording(now: Date = Date()) async -> MeetingDetectorEvent? {
+        guard case let .recording(sessionID) = appStateMachine.state else { return nil }
+        let outcome = await finishSession(sessionID: sessionID, now: now)
+        switch outcome {
+        case .success:
+            return .stopped(sessionID: sessionID)
+        case let .failure(reason):
+            return .transcriptionFailed(sessionID: sessionID, reason: reason)
+        }
     }
 
-    private func finishSession(sessionID: String, now: Date) async {
+    private func finishSession(sessionID: String, now: Date) async -> SessionFinishOutcome {
         _ = appStateMachine.startTranscription()
         guard let artifact = try? captureEngine.stop() else {
             appStateMachine.reset()
-            return
+            return .failure("failed to finalize captured audio")
         }
 
         let result = await worker.run(job: .init(sessionID: sessionID, audioURL: artifact.mixedAudioURL))
@@ -90,6 +109,7 @@ public final class RecorderOrchestrator {
             )
             try? repository.saveSession(record)
             _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
+            return .success
         case let .failure(failure):
             let startedAt = currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970
             let record = SessionRecord(
@@ -100,6 +120,7 @@ public final class RecorderOrchestrator {
             )
             try? repository.saveSession(record)
             _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
+            return .failure(failure.description)
         }
     }
 }
@@ -174,7 +195,7 @@ public final class RecorderRuntime {
         try orchestrator?.startManualRecording(now: now)
     }
 
-    public func stopManualRecording(now: Date = Date()) async {
+    public func stopManualRecording(now: Date = Date()) async -> MeetingDetectorEvent? {
         await orchestrator?.stopManualRecording(now: now)
     }
 
