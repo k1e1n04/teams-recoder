@@ -19,7 +19,7 @@ public final class SessionAudioArtifactStore {
     }
 
     public func audioURL(for sessionID: String) -> URL {
-        directory.appendingPathComponent("\(sessionID)-mixed.raw")
+        directory.appendingPathComponent("\(sessionID)-mixed.wav")
     }
 
     public func deleteArtifact(for sessionID: String) throws {
@@ -36,7 +36,7 @@ public final class SessionAudioArtifactStore {
             options: [.skipsHiddenFiles]
         )
         let cutoff = nowProvider().addingTimeInterval(-failedRetentionInterval)
-        for url in fileURLs where url.pathExtension == "raw" && url.lastPathComponent.hasSuffix("-mixed.raw") {
+        for url in fileURLs where url.pathExtension == "wav" && url.lastPathComponent.hasSuffix("-mixed.wav") {
             let values = try url.resourceValues(forKeys: [.contentModificationDateKey])
             let modifiedAt = values.contentModificationDate ?? .distantPast
             if modifiedAt < cutoff {

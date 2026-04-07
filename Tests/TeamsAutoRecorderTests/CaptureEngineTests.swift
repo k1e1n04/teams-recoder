@@ -1,3 +1,4 @@
+import AVFoundation
 import XCTest
 @testable import TeamsAutoRecorder
 
@@ -23,7 +24,8 @@ final class CaptureEngineTests: XCTestCase {
     }
 
     func testStopPrefersLiveCaptureArtifactWhenAvailable() throws {
-        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 
         let liveOutput = CapturedAudioSamples(teams: [0.5, 0.5], mic: [0.5, 0.5], mixed: [0.9, 0.1])
@@ -36,11 +38,34 @@ final class CaptureEngineTests: XCTestCase {
 
         try engine.start(sessionID: "live-1")
         let artifact = try engine.stop()
-        let body = try String(contentsOf: artifact.mixedAudioURL, encoding: .utf8)
+        let samples = try readWAVSamples(from: artifact.mixedAudioURL)
 
         XCTAssertEqual(session.startCallCount, 1)
         XCTAssertEqual(session.stopCallCount, 1)
-        XCTAssertEqual(body, "0.900000\n0.100000")
+        XCTAssertEqual(samples.count, 2)
+        XCTAssertEqual(samples[0], 0.9, accuracy: 0.001)
+        XCTAssertEqual(samples[1], 0.1, accuracy: 0.001)
+    }
+
+    func testStopWritesMixedAudioAsWAV() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let engine = CaptureEngine(
+            mixer: AudioMixer(),
+            outputDirectory: dir,
+            liveCaptureFactory: { _ in nil }
+        )
+        try engine.start(sessionID: "wav-test")
+        try engine.appendTeams(samples: [0.5], timestamp: 0)
+        try engine.appendMic(samples: [0.5], timestamp: 0)
+        let artifact = try engine.stop()
+
+        XCTAssertEqual(artifact.mixedAudioURL.pathExtension, "wav")
+        let audioFile = try AVAudioFile(forReading: artifact.mixedAudioURL)
+        XCTAssertEqual(audioFile.processingFormat.sampleRate, 16_000, accuracy: 0.1)
+        XCTAssertEqual(audioFile.processingFormat.channelCount, 1)
     }
 
     func testStartThrowsWhenLiveCaptureSetupFails() throws {
@@ -58,7 +83,8 @@ final class CaptureEngineTests: XCTestCase {
     }
 
     func testStopFallsBackToMixingLiveInputsWhenRecordedMixIsAllZero() throws {
-        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 
         let liveOutput = CapturedAudioSamples(
@@ -75,10 +101,24 @@ final class CaptureEngineTests: XCTestCase {
 
         try engine.start(sessionID: "live-zero-mix")
         let artifact = try engine.stop()
-        let body = try String(contentsOf: artifact.mixedAudioURL, encoding: .utf8)
+        let samples = try readWAVSamples(from: artifact.mixedAudioURL)
 
-        XCTAssertEqual(body, "0.400000\n0.400000")
+        XCTAssertEqual(samples.count, 2)
+        XCTAssertEqual(samples[0], 0.4, accuracy: 0.001)
+        XCTAssertEqual(samples[1], 0.4, accuracy: 0.001)
     }
+}
+
+private func readWAVSamples(from url: URL) throws -> [Float] {
+    let file = try AVAudioFile(forReading: url)
+    let frameCount = AVAudioFrameCount(file.length)
+    guard frameCount > 0 else { return [] }
+    let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: frameCount)!
+    try file.read(into: buffer)
+    return Array(UnsafeBufferPointer(
+        start: buffer.floatChannelData!.pointee,
+        count: Int(buffer.frameLength)
+    ))
 }
 
 final class LiveCaptureSessionStub: LiveCaptureSession {

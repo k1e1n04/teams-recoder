@@ -119,7 +119,7 @@ public final class CaptureEngine {
         }
 
         try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
-        let mixedURL = outputDirectory.appendingPathComponent("\(sessionID)-mixed.raw")
+        let mixedURL = outputDirectory.appendingPathComponent("\(sessionID)-mixed.wav")
 
         let mixedSamples: [Float]
         if let liveSession {
@@ -140,12 +140,29 @@ public final class CaptureEngine {
             }
         }
 
-        let body = mixedSamples.map { String(format: "%.6f", $0) }.joined(separator: "\n")
-        try body.data(using: .utf8)?.write(to: mixedURL)
+        try Self.writeWAV(samples: mixedSamples, to: mixedURL)
 
         currentSessionID = nil
         chunks.removeAll(keepingCapacity: true)
         return CaptureArtifact(sessionID: sessionID, mixedAudioURL: mixedURL)
+    }
+
+    private static func writeWAV(samples: [Float], to url: URL) throws {
+        let format = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 16_000,
+            channels: 1,
+            interleaved: false
+        )!
+        let audioFile = try AVAudioFile(forWriting: url, settings: format.settings)
+        guard !samples.isEmpty else { return }
+        let frameCount = AVAudioFrameCount(samples.count)
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        buffer.frameLength = frameCount
+        samples.withUnsafeBufferPointer { ptr in
+            buffer.floatChannelData!.pointee.initialize(from: ptr.baseAddress!, count: samples.count)
+        }
+        try audioFile.write(from: buffer)
     }
 
     private static func isEffectivelySilent(_ samples: [Float], epsilon: Float = 0.000_001) -> Bool {
