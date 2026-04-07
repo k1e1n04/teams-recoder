@@ -2,17 +2,17 @@ import XCTest
 @testable import TeamsAutoRecorder
 
 final class MeetingDetectorTests: XCTestCase {
-    func testStartsOnlyWhenWindowAndAudioThresholdAreMet() {
+    func testStartsWhenWindowThresholdIsMet() {
         let config = MeetingDetectorConfig(startUISeconds: 3, audioWindowSeconds: 4, audioRequiredRatio: 0.75, stopGraceSeconds: 2, minRecordingSeconds: 10, falsePositiveCapPerDay: 2)
         let detector = MeetingDetector(config: config)
 
         let base = Date(timeIntervalSince1970: 0)
-        XCTAssertNil(detector.ingest(windowActive: true, audioActive: true, at: base))
-        XCTAssertNil(detector.ingest(windowActive: true, audioActive: true, at: base.addingTimeInterval(1)))
-        XCTAssertNil(detector.ingest(windowActive: true, audioActive: false, at: base.addingTimeInterval(2)))
+        XCTAssertNil(detector.ingest(windowActive: true, audioActive: false, at: base))
+        XCTAssertNil(detector.ingest(windowActive: true, audioActive: false, at: base.addingTimeInterval(1)))
 
-        let event = detector.ingest(windowActive: true, audioActive: true, at: base.addingTimeInterval(3))
-        XCTAssertEqual(event, .started(sessionID: "session-3"))
+        // 音声なしでも window が続けば開始する
+        let event = detector.ingest(windowActive: true, audioActive: false, at: base.addingTimeInterval(2))
+        XCTAssertEqual(event, .started(sessionID: "session-2"))
     }
 
     func testDelaysStopUntilMinimumDuration() {
