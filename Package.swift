@@ -20,7 +20,7 @@ let package = Package(
                 .product(name: "WhisperKit", package: "WhisperKit"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation")
             ],
-            exclude: ["App/Main.swift"]
+            exclude: ["App/Main.swift", "Assets.xcassets"]
         ),
         .testTarget(name: "TeamsAutoRecorderTests", dependencies: ["TeamsAutoRecorder"])
     ]

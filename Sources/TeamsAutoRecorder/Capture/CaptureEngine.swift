@@ -316,16 +316,18 @@ private final class StreamAudioOutput: NSObject, SCStreamOutput {
     }
 }
 
-private final class RealtimeAudioMixer {
+final class RealtimeAudioMixer {
     private let engine = AVAudioEngine()
     private let teamsNode = AVAudioPlayerNode()
     private let micNode = AVAudioPlayerNode()
     private let format: AVAudioFormat
+    let configuredPlaybackGain: Float
     private let lock = NSLock()
     private var mixedSamples: [Float] = []
 
-    init(sampleRate: Double) {
+    init(sampleRate: Double, playbackGain: Float = 0) {
         format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false)!
+        configuredPlaybackGain = playbackGain
     }
 
     func start() throws {
@@ -333,6 +335,7 @@ private final class RealtimeAudioMixer {
         engine.attach(micNode)
         engine.connect(teamsNode, to: engine.mainMixerNode, format: format)
         engine.connect(micNode, to: engine.mainMixerNode, format: format)
+        engine.mainMixerNode.outputVolume = configuredPlaybackGain
 
         engine.mainMixerNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             guard let self else { return }
