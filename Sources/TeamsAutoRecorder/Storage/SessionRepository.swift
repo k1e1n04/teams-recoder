@@ -239,6 +239,32 @@ extension SessionRepository: SessionRenaming {
     }
 }
 
+public protocol SessionSearching {
+    func searchSessions(query: String) throws -> [SessionRecord]
+}
+
+extension SessionRepository: SessionSearching {
+    public func searchSessions(query: String) throws -> [SessionRecord] {
+        let pattern = "%\(query)%"
+        let sql = """
+        SELECT session_id, started_at, ended_at, transcript_text,
+               failure_stage, failure_reason, name
+        FROM sessions
+        WHERE name LIKE ? OR transcript_text LIKE ?
+        ORDER BY started_at DESC;
+        """
+        let stmt = try database.prepare(sql)
+        defer { database.finalize(stmt) }
+        bindText(pattern, to: stmt, index: 1)
+        bindText(pattern, to: stmt, index: 2)
+        var result: [SessionRecord] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            result.append(rowToRecord(stmt))
+        }
+        return result
+    }
+}
+
 extension SessionRepository: SessionDeleting {
     public func deleteSession(sessionID: String) throws {
         for sql in [

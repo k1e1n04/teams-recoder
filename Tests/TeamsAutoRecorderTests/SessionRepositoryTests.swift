@@ -148,6 +148,77 @@ final class SessionRepositoryTests: XCTestCase {
         XCTAssertNil(try repo.fetchSession(sessionID: "s1"))
     }
 
+    func testSearchByName() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+
+        try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello", name: "週次定例"))
+        try repo.saveSession(.init(sessionID: "s2", startedAt: 3, endedAt: 4, transcriptText: "world"))
+
+        let results = try repo.searchSessions(query: "週次")
+        XCTAssertEqual(results.map(\.sessionID), ["s1"])
+    }
+
+    func testSearchByTranscriptText() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+
+        try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "プロジェクト進捗"))
+        try repo.saveSession(.init(sessionID: "s2", startedAt: 3, endedAt: 4, transcriptText: "別の会議"))
+
+        let results = try repo.searchSessions(query: "進捗")
+        XCTAssertEqual(results.map(\.sessionID), ["s1"])
+    }
+
+    func testSearchAcrossBothFields() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+
+        try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "定例内容", name: "週次定例"))
+        try repo.saveSession(.init(sessionID: "s2", startedAt: 3, endedAt: 4, transcriptText: "定例の話題"))
+        try repo.saveSession(.init(sessionID: "s3", startedAt: 5, endedAt: 6, transcriptText: "無関係"))
+
+        let results = try repo.searchSessions(query: "定例")
+        XCTAssertEqual(results.map(\.sessionID).sorted(), ["s1", "s2"])
+    }
+
+    func testSearchReturnsEmptyWhenNoMatch() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+
+        try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello"))
+
+        let results = try repo.searchSessions(query: "存在しないキーワード")
+        XCTAssertTrue(results.isEmpty)
+    }
+
+    func testSearchResultsOrderedByStartedAtDesc() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+
+        try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "定例"))
+        try repo.saveSession(.init(sessionID: "s2", startedAt: 3, endedAt: 4, transcriptText: "定例"))
+        try repo.saveSession(.init(sessionID: "s3", startedAt: 2, endedAt: 3, transcriptText: "定例"))
+
+        let results = try repo.searchSessions(query: "定例")
+        XCTAssertEqual(results.map(\.sessionID), ["s2", "s3", "s1"])
+    }
+
     func testBootstrapCleansUpExpiredFailedRawAudioArtifacts() throws {
         let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
