@@ -215,18 +215,18 @@ private final class TeamsLiveCaptureSession: NSObject, LiveCaptureSession {
         let content: SCShareableContent = try blockingAsync {
             try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         }
-        let candidateBundleIDs = Set(["com.microsoft.teams2", "com.microsoft.teams"])
-        let teamsApps = content.applications.filter { app in
+        let candidateBundleIDs = Set(["com.microsoft.teams2", "com.microsoft.teams", "com.tinyspeck.slackmacgap"])
+        let meetingApps = content.applications.filter { app in
             candidateBundleIDs.contains(app.bundleIdentifier)
         }
-        guard let teamsApp = teamsApps.first else {
+        guard !meetingApps.isEmpty else {
             throw CaptureEngineError.notRecording
         }
         guard let display = content.displays.first else {
             throw CaptureEngineError.notRecording
         }
 
-        let filter = SCContentFilter(display: display, including: [teamsApp], exceptingWindows: [])
+        let filter = SCContentFilter(display: display, including: meetingApps, exceptingWindows: [])
         let config = SCStreamConfiguration()
         config.capturesAudio = true
         config.excludesCurrentProcessAudio = true
