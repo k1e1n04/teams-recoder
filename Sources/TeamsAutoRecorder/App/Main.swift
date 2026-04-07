@@ -249,7 +249,7 @@ private final class RuntimeController: ObservableObject {
     private func requestAccessibilityTrustIfNeeded() {
         guard !AXIsProcessTrusted(), !hasRequestedAccessibilityTrust else { return }
         hasRequestedAccessibilityTrust = true
-        let options = [kAXTrustedCheckOptionPrompt as String: true] as CFDictionary
+        let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
     }
 
