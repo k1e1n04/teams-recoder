@@ -18,6 +18,7 @@ public final class DashboardViewModel: ObservableObject {
     private let sessionSearcher: SessionSearching?
     private let launchAtLoginManager: LaunchAtLoginManaging
     private let mcpServerController: MCPServerControlling?
+    private let summaryStore: SummaryStore?
 
     public init(
         sessionProvider: SessionListing,
@@ -25,7 +26,8 @@ public final class DashboardViewModel: ObservableObject {
         sessionRenamer: SessionRenaming? = nil,
         sessionSearcher: SessionSearching? = nil,
         launchAtLoginManager: LaunchAtLoginManaging,
-        mcpServerController: MCPServerControlling? = nil
+        mcpServerController: MCPServerControlling? = nil,
+        summaryStore: SummaryStore? = nil
     ) {
         self.sessionProvider = sessionProvider
         self.sessionDeleter = sessionDeleter
@@ -33,8 +35,13 @@ public final class DashboardViewModel: ObservableObject {
         self.sessionSearcher = sessionSearcher
         self.launchAtLoginManager = launchAtLoginManager
         self.mcpServerController = mcpServerController
+        self.summaryStore = summaryStore
         self.launchAtLoginEnabled = launchAtLoginManager.isEnabled
         self.mcpServerEnabled = mcpServerController?.isRunning ?? false
+    }
+
+    public func readSummary(sessionID: String) -> String? {
+        return try? summaryStore?.readSession(sessionID: sessionID)
     }
 
     public func loadSessions(limit: Int = 100) {
