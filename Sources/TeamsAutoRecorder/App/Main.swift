@@ -116,8 +116,7 @@ private enum DashboardFactory {
     @MainActor
     static func makeViewModel() -> DashboardViewModel {
         do {
-            let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-                .appendingPathComponent("TeamsAutoRecorder", isDirectory: true)
+            let base = try AppSupportDirectoryResolver().resolve()
             try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
             let database = try Database(path: base.appendingPathComponent("teams-auto-recorder.sqlite").path)
             try database.migrate()
@@ -190,8 +189,7 @@ private final class RuntimeController: ObservableObject {
 
     private func bootstrapRuntime() {
         do {
-            let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-                .appendingPathComponent("TeamsAutoRecorder", isDirectory: true)
+            let base = try AppSupportDirectoryResolver().resolve()
             try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
 
             let orchestrator = try AppBootstrap().makeDefaultOrchestrator(storageDirectory: base)

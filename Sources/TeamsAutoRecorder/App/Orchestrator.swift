@@ -81,8 +81,7 @@ public struct AppBootstrap {
         let db = try Database(path: storageDirectory.appendingPathComponent("teams-auto-recorder.sqlite").path)
         try db.migrate()
         let repository = SessionRepository(database: db, fileManager: .default)
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("TeamsAutoRecorder")
+        let appSupport = try AppSupportDirectoryResolver().resolve()
         let modelsDir = appSupport.appendingPathComponent("Models", isDirectory: true)
         let modelManager = WhisperModelManager(baseDirectory: modelsDir, downloader: DefaultWhisperModelDownloader())
         let transcriber = WhisperKitTranscriber(
