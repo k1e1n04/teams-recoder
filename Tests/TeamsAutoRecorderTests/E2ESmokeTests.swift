@@ -11,7 +11,11 @@ final class E2ESmokeTests: XCTestCase {
 
         let orchestrator = RecorderOrchestrator(
             detector: MeetingDetector(config: .forTests),
-            captureEngine: CaptureEngine(mixer: AudioMixer(), outputDirectory: temp),
+            captureEngine: CaptureEngine(
+                mixer: AudioMixer(),
+                outputDirectory: temp,
+                liveCaptureFactory: { _ in nil }
+            ),
             worker: TranscriptionWorker(transcriber: StubTranscriber(failuresBeforeSuccess: 0), maxRetries: 0),
             repository: SessionRepository(database: db, fileManager: .default)
         )
@@ -42,7 +46,11 @@ final class E2ESmokeTests: XCTestCase {
 
         let orchestrator = RecorderOrchestrator(
             detector: MeetingDetector(config: .forTests),
-            captureEngine: CaptureEngine(mixer: AudioMixer(), outputDirectory: temp),
+            captureEngine: CaptureEngine(
+                mixer: AudioMixer(),
+                outputDirectory: temp,
+                liveCaptureFactory: { _ in nil }
+            ),
             worker: TranscriptionWorker(transcriber: StubTranscriber(failuresBeforeSuccess: 1), maxRetries: 0),
             repository: SessionRepository(database: db, fileManager: .default)
         )
@@ -64,5 +72,39 @@ final class E2ESmokeTests: XCTestCase {
         let saved = try orchestrator.repository.fetchSession(sessionID: "session-0")
         XCTAssertEqual(saved?.sessionID, "session-0")
         XCTAssertNotNil(saved)
+    }
+
+    func testStartFailureSurfacesAsTranscriptionFailureEvent() async throws {
+        let temp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+
+        let db = try Database(path: temp.appendingPathComponent("e2e.sqlite").path)
+        try db.migrate()
+
+        let session = LiveCaptureSessionStub(startResult: .failure(StubError.forced), stopResult: .success(.init(teams: [], mic: [])))
+        let orchestrator = RecorderOrchestrator(
+            detector: MeetingDetector(config: .forTests),
+            captureEngine: CaptureEngine(
+                mixer: AudioMixer(),
+                outputDirectory: temp,
+                liveCaptureFactory: { _ in session }
+            ),
+            worker: TranscriptionWorker(transcriber: StubTranscriber(failuresBeforeSuccess: 0), maxRetries: 0),
+            repository: SessionRepository(database: db, fileManager: .default)
+        )
+
+        let event = await orchestrator.tick(
+            windowActive: true,
+            audioActive: true,
+            now: Date(timeIntervalSince1970: 0)
+        )
+
+        switch event {
+        case let .transcriptionFailed(sessionID, reason):
+            XCTAssertEqual(sessionID, "session-0")
+            XCTAssertFalse(reason.isEmpty)
+        default:
+            XCTFail("expected transcriptionFailed event")
+        }
     }
 }

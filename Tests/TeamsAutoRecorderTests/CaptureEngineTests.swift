@@ -7,7 +7,11 @@ final class CaptureEngineTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 
         let mixer = AudioMixer()
-        let engine = CaptureEngine(mixer: mixer, outputDirectory: dir)
+        let engine = CaptureEngine(
+            mixer: mixer,
+            outputDirectory: dir,
+            liveCaptureFactory: { _ in nil }
+        )
 
         try engine.start(sessionID: "s1")
         try engine.appendTeams(samples: [0.2, 0.4], timestamp: 0)
@@ -38,19 +42,39 @@ final class CaptureEngineTests: XCTestCase {
         XCTAssertEqual(session.stopCallCount, 1)
         XCTAssertEqual(body, "0.900000\n0.100000")
     }
+
+    func testStartThrowsWhenLiveCaptureSetupFails() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let session = LiveCaptureSessionStub(startResult: .failure(StubError.forced), stopResult: .success(.init(teams: [], mic: [])))
+        let engine = CaptureEngine(
+            mixer: AudioMixer(),
+            outputDirectory: dir,
+            liveCaptureFactory: { _ in session }
+        )
+
+        XCTAssertThrowsError(try engine.start(sessionID: "live-fail"))
+    }
 }
 
-private final class LiveCaptureSessionStub: LiveCaptureSession {
+final class LiveCaptureSessionStub: LiveCaptureSession {
     private(set) var startCallCount = 0
     private(set) var stopCallCount = 0
+    private let startResult: Result<Void, Error>
     private let stopResult: Result<CapturedAudioSamples, Error>
 
-    init(stopResult: Result<CapturedAudioSamples, Error>) {
+    init(
+        startResult: Result<Void, Error> = .success(()),
+        stopResult: Result<CapturedAudioSamples, Error>
+    ) {
+        self.startResult = startResult
         self.stopResult = stopResult
     }
 
     func start() throws {
         startCallCount += 1
+        try startResult.get()
     }
 
     func stop() throws -> CapturedAudioSamples {

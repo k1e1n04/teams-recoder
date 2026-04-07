@@ -52,7 +52,13 @@ public final class RecorderOrchestrator {
                 return nil
             }
             currentSessionStartedAt = now
-            try? captureEngine.start(sessionID: sessionID)
+            do {
+                try captureEngine.start(sessionID: sessionID)
+            } catch {
+                appStateMachine.reset()
+                currentSessionStartedAt = nil
+                return .transcriptionFailed(sessionID: sessionID, reason: String(describing: error))
+            }
             try? captureEngine.appendTeams(samples: [1], timestamp: now.timeIntervalSince1970)
             try? captureEngine.appendMic(samples: [1], timestamp: now.timeIntervalSince1970)
             return event

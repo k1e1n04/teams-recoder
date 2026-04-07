@@ -33,6 +33,7 @@ public typealias LiveCaptureSessionFactory = (String) -> LiveCaptureSession?
 public enum CaptureEngineError: Error {
     case alreadyRecording
     case notRecording
+    case liveCaptureSetupFailed(String)
 }
 
 public final class CaptureEngine {
@@ -84,6 +85,8 @@ public final class CaptureEngine {
                 liveSession = session
             } catch {
                 liveSession = nil
+                currentSessionID = nil
+                throw CaptureEngineError.liveCaptureSetupFailed(String(describing: error))
             }
         }
     }

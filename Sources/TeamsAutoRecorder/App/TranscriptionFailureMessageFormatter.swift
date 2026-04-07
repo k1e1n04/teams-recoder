@@ -14,6 +14,9 @@ enum TranscriptionFailureMessageFormatter {
         if reason.contains("modelLoadFailed") {
             return "音声認識モデルの読み込みに失敗しました。アプリを再起動してください。"
         }
+        if reason.contains("liveCaptureSetupFailed") {
+            return "会議音声の収録開始に失敗しました。画面収録とマイクの権限、Teams/Slack の再起動を確認してください。"
+        }
         if reason.contains("transcriptionFailed") {
             return "文字起こしに失敗しました。もう一度お試しください。"
         }
