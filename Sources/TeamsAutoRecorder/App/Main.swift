@@ -147,6 +147,7 @@ private final class FallbackLaunchAtLoginManager: LaunchAtLoginManaging {
 @MainActor
 private final class RuntimeController: ObservableObject {
     @Published private(set) var statusText: String = "待機中"
+    private let accessibilityMissingStatus = "権限不足: アクセシビリティ"
 
     private var runtime: RecorderRuntime?
     private var loopTask: Task<Void, Never>?
@@ -154,6 +155,7 @@ private final class RuntimeController: ObservableObject {
     private var notificationSink: NotificationSink?
     private var microphoneMonitor: MicrophoneLevelMonitor?
     private let accessibilityTextCollector = TeamsAccessibilityTextCollector()
+    private let ocrTextCollector = TeamsWindowOCRTextCollector()
     private var hasRequestedAccessibilityTrust = false
 
     func startIfNeeded(notificationSink: NotificationSink, onSessionSaved: @escaping () -> Void) {
@@ -249,6 +251,7 @@ private final class RuntimeController: ObservableObject {
     private func requestAccessibilityTrustIfNeeded() {
         guard !AXIsProcessTrusted(), !hasRequestedAccessibilityTrust else { return }
         hasRequestedAccessibilityTrust = true
+        statusText = accessibilityMissingStatus
         let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
     }
@@ -261,8 +264,21 @@ private final class RuntimeController: ObservableObject {
         guard !runningApps.isEmpty else { return false }
 
         let accessibilityTrusted = AXIsProcessTrusted()
-        let visibleTexts = runningApps.flatMap { app in
+        guard accessibilityTrusted else {
+            if statusText != accessibilityMissingStatus {
+                statusText = accessibilityMissingStatus
+            }
+            return false
+        }
+        if statusText == accessibilityMissingStatus {
+            statusText = "待機中"
+        }
+        let processIDs = Set(runningApps.map(\.processIdentifier))
+        var visibleTexts = runningApps.flatMap { app in
             accessibilityTextCollector.collectTexts(for: app.processIdentifier)
+        }
+        if !TeamsMeetingWindowClassifier.allKeywordsExist(in: visibleTexts) {
+            visibleTexts.append(contentsOf: ocrTextCollector.collectTexts(for: processIDs))
         }
         return TeamsMeetingControlEvaluator.isMeetingUIActive(
             accessibilityTrusted: accessibilityTrusted,
