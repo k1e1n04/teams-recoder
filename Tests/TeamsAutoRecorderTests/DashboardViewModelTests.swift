@@ -73,6 +73,104 @@ final class DashboardViewModelTests: XCTestCase {
         XCTAssertNotNil(vm.errorMessage)
         XCTAssertFalse(vm.launchAtLoginEnabled)
     }
+
+    func testSearchUpdatesDisplayedSessionsAndSetsIsSearchActive() {
+        let provider = SessionProviderStub(sessions: [
+            .init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello"),
+            .init(sessionID: "s2", startedAt: 3, endedAt: 4, transcriptText: "world")
+        ])
+        let searcher = SessionSearcherStub(results: [
+            .init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
+        ])
+        let launch = LaunchAtLoginManagerStub()
+        let vm = DashboardViewModel(
+            sessionProvider: provider,
+            sessionSearcher: searcher,
+            launchAtLoginManager: launch
+        )
+        vm.loadSessions()
+
+        vm.search(query: "hello")
+
+        XCTAssertEqual(vm.displayedSessions.map(\.sessionID), ["s1"])
+        XCTAssertTrue(vm.isSearchActive)
+        XCTAssertNil(vm.errorMessage)
+    }
+
+    func testClearSearchRestoresDisplayedSessionsAndClearsFlag() {
+        let provider = SessionProviderStub(sessions: [
+            .init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello"),
+            .init(sessionID: "s2", startedAt: 3, endedAt: 4, transcriptText: "world")
+        ])
+        let searcher = SessionSearcherStub(results: [
+            .init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
+        ])
+        let launch = LaunchAtLoginManagerStub()
+        let vm = DashboardViewModel(
+            sessionProvider: provider,
+            sessionSearcher: searcher,
+            launchAtLoginManager: launch
+        )
+        vm.loadSessions()
+        vm.search(query: "hello")
+
+        vm.clearSearch()
+
+        XCTAssertEqual(vm.displayedSessions.map(\.sessionID), ["s1", "s2"])
+        XCTAssertFalse(vm.isSearchActive)
+    }
+
+    func testSearchWithEmptyQueryCallsClearSearch() {
+        let provider = SessionProviderStub(sessions: [
+            .init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
+        ])
+        let searcher = SessionSearcherStub(results: [])
+        let launch = LaunchAtLoginManagerStub()
+        let vm = DashboardViewModel(
+            sessionProvider: provider,
+            sessionSearcher: searcher,
+            launchAtLoginManager: launch
+        )
+        vm.loadSessions()
+        vm.search(query: "hello")
+
+        vm.search(query: "   ")
+
+        XCTAssertEqual(vm.displayedSessions.map(\.sessionID), ["s1"])
+        XCTAssertFalse(vm.isSearchActive)
+    }
+
+    func testSearchFailureSetsErrorMessage() {
+        let provider = SessionProviderStub(sessions: [
+            .init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
+        ])
+        let searcher = SessionSearcherStub(results: [], error: StubError.forced)
+        let launch = LaunchAtLoginManagerStub()
+        let vm = DashboardViewModel(
+            sessionProvider: provider,
+            sessionSearcher: searcher,
+            launchAtLoginManager: launch
+        )
+        vm.loadSessions()
+
+        vm.search(query: "hello")
+
+        XCTAssertNotNil(vm.errorMessage)
+        XCTAssertTrue(vm.errorMessage!.contains("検索に失敗しました"))
+    }
+
+    func testLoadSessionsSyncsDisplayedSessions() {
+        let provider = SessionProviderStub(sessions: [
+            .init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
+        ])
+        let launch = LaunchAtLoginManagerStub()
+        let vm = DashboardViewModel(sessionProvider: provider, launchAtLoginManager: launch)
+
+        vm.loadSessions()
+
+        XCTAssertEqual(vm.displayedSessions.map(\.sessionID), ["s1"])
+        XCTAssertFalse(vm.isSearchActive)
+    }
 }
 
 private final class SessionRenamerStub: SessionRenaming {
@@ -94,6 +192,21 @@ private struct SessionProviderStub: SessionListing {
 
     func fetchRecentSessions(limit: Int) throws -> [SessionRecord] {
         Array(sessions.prefix(limit))
+    }
+}
+
+private struct SessionSearcherStub: SessionSearching {
+    let results: [SessionRecord]
+    let error: Error?
+
+    init(results: [SessionRecord], error: Error? = nil) {
+        self.results = results
+        self.error = error
+    }
+
+    func searchSessions(query: String) throws -> [SessionRecord] {
+        if let error { throw error }
+        return results
     }
 }
 
