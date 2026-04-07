@@ -77,7 +77,17 @@ public final class TeamsWindowOCRTextCollector {
             return []
         }
 
-        guard let observations = request.results else { return [] }
-        return observations.compactMap { $0.topCandidates(1).first?.string }
+        guard let rawObservations = request.results, !rawObservations.isEmpty else {
+            return []
+        }
+        let observations = Array(rawObservations)
+        var texts: [String] = []
+        texts.reserveCapacity(observations.count)
+        for observation in observations {
+            if let text = observation.topCandidates(1).first?.string {
+                texts.append(text)
+            }
+        }
+        return texts
     }
 }

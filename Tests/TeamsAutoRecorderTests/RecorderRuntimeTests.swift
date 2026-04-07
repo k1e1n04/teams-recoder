@@ -3,7 +3,7 @@ import XCTest
 
 final class RecorderRuntimeTests: XCTestCase {
     @MainActor
-    func testRunIterationPassesSignalsToTickHandler() async {
+    func testRunIterationTreatsWindowAsAudioWhenMeetingUIIsActive() async {
         let now = Date(timeIntervalSince1970: 1234)
         let window = StubWindowProvider(value: true)
         let audio = StubAudioProvider(value: false)
@@ -22,7 +22,7 @@ final class RecorderRuntimeTests: XCTestCase {
 
         XCTAssertEqual(event, .started(sessionID: "s1"))
         XCTAssertEqual(captured?.0, true)
-        XCTAssertEqual(captured?.1, false)
+        XCTAssertEqual(captured?.1, true)
         XCTAssertEqual(captured?.2, now)
     }
 }

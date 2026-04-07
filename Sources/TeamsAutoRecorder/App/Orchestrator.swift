@@ -139,7 +139,10 @@ public final class RecorderRuntime {
     @discardableResult
     public func runIteration(at now: Date = Date()) async -> MeetingDetectorEvent? {
         let windowActive = windowSignalProvider.isMeetingWindowActive(at: now)
-        let audioActive = audioSignalProvider.isAudioActive(at: now)
+        var audioActive = audioSignalProvider.isAudioActive(at: now)
+        if windowActive {
+            audioActive = true
+        }
         if let orchestrator {
             return await orchestrator.tick(windowActive: windowActive, audioActive: audioActive, now: now)
         }
