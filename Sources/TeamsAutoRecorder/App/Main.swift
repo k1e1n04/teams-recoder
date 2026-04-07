@@ -156,6 +156,8 @@ private struct ControlsSection: View {
                 )
             )
 
+            MCPToggleSection(viewModel: viewModel)
+
             if let error = viewModel.errorMessage {
                 ErrorBanner(message: error)
             }
@@ -299,6 +301,55 @@ private struct LaunchToggle: View {
             }
             Spacer()
             MiniToggle(isOn: $isOn)
+        }
+    }
+}
+
+private struct MCPToggleSection: View {
+    @ObservedObject var viewModel: DashboardViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "network")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.inkMuted)
+                    Text("Claude Code MCP サーバー")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.inkSecondary)
+                }
+                Spacer()
+                MiniToggle(
+                    isOn: Binding(
+                        get: { viewModel.mcpServerEnabled },
+                        set: { viewModel.setMCPServerEnabled($0) }
+                    )
+                )
+            }
+
+            if viewModel.mcpServerEnabled {
+                let url = "http://localhost:\(viewModel.mcpServerPort)/mcp"
+                HStack(spacing: 6) {
+                    Text(url)
+                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .foregroundStyle(Color.inkMuted)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(url, forType: .string)
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.inkMuted)
+                    }
+                    .buttonStyle(.plain)
+                }
+                Text("ポート変更は再起動が必要です")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.inkDim)
+            }
         }
     }
 }
@@ -875,12 +926,16 @@ private enum DashboardFactory {
             let artifactStore = SessionAudioArtifactStore(directory: base)
             try artifactStore.cleanupExpiredArtifacts()
             let repository = SessionRepository(database: database, fileManager: .default, artifactStore: artifactStore)
+            let summaryStore = SummaryStore(directory: base.appendingPathComponent("summaries", isDirectory: true))
+            let toolHandler = MCPToolHandler(sessionFetcher: repository, summaryStore: summaryStore)
+            let mcpController = DefaultMCPServerController(toolHandler: toolHandler)
             return DashboardViewModel(
                 sessionProvider: repository,
                 sessionDeleter: repository,
                 sessionRenamer: repository,
                 sessionSearcher: repository,
-                launchAtLoginManager: SystemLaunchAtLoginManager()
+                launchAtLoginManager: SystemLaunchAtLoginManager(),
+                mcpServerController: mcpController
             )
         } catch {
             return DashboardViewModel(
