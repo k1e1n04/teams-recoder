@@ -67,9 +67,8 @@ public final class TeamsWindowOCRTextCollector {
 
     private func recognizeTexts(in image: CGImage) -> [String] {
         let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .fast
+        request.recognitionLevel = .accurate
         request.usesLanguageCorrection = false
-        request.recognitionLanguages = ["ja-JP", "en-US"]
 
         let handler = VNImageRequestHandler(cgImage: image, options: [:])
         do {
