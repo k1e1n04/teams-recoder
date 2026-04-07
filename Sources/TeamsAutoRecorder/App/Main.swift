@@ -4,6 +4,8 @@ import AVFoundation
 import CoreGraphics
 import ApplicationServices
 
+// MARK: - App
+
 @main
 struct TeamsAutoRecorderApp: App {
     @StateObject private var viewModel = DashboardFactory.makeViewModel()
@@ -11,16 +13,9 @@ struct TeamsAutoRecorderApp: App {
     @StateObject private var runtimeController = RuntimeController()
 
     var body: some Scene {
-        WindowGroup("TeamsAutoRecorder") {
-            DashboardView(viewModel: viewModel, runtimeController: runtimeController)
-                .frame(minWidth: 860, minHeight: 560)
-                .background(
-                    LinearGradient(
-                        colors: [Color(red: 0.97, green: 0.98, blue: 1.0), Color(red: 0.93, green: 0.95, blue: 0.99)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+        WindowGroup("Teams Auto Recorder") {
+            RootView(viewModel: viewModel, runtimeController: runtimeController)
+                .frame(minWidth: 920, minHeight: 580)
                 .onAppear {
                     viewModel.loadSessions()
                     notificationSink.requestAuthorizationIfNeeded()
@@ -32,102 +27,517 @@ struct TeamsAutoRecorderApp: App {
     }
 }
 
-private struct DashboardView: View {
+// MARK: - Color Tokens
+
+private extension Color {
+    static let obsidianBase    = Color(red: 0.059, green: 0.063, blue: 0.078) // #0F1014
+    static let obsidianPanel   = Color(red: 0.086, green: 0.094, blue: 0.118) // #161820
+    static let obsidianSurface = Color(red: 0.122, green: 0.133, blue: 0.165) // #1F2229
+    static let obsidianBorder  = Color(red: 0.165, green: 0.176, blue: 0.227) // #2A2D3A
+    static let obsidianHover   = Color(red: 0.137, green: 0.149, blue: 0.188) // #232530
+
+    static let inkPrimary   = Color(red: 0.918, green: 0.906, blue: 0.882) // #EAE7E1
+    static let inkSecondary = Color(red: 0.600, green: 0.624, blue: 0.698) // #99A0B2
+    static let inkMuted     = Color(red: 0.365, green: 0.384, blue: 0.455) // #5D6274
+    static let inkDim       = Color(red: 0.220, green: 0.235, blue: 0.290) // #383C4A
+
+    static let amber  = Color(red: 0.949, green: 0.647, blue: 0.188) // #F2A530
+    static let recRed = Color(red: 0.910, green: 0.278, blue: 0.278) // #E84747
+    static let okGreen = Color(red: 0.243, green: 0.745, blue: 0.502) // #3EBD80
+}
+
+// MARK: - Root Layout
+
+private struct RootView: View {
     @ObservedObject var viewModel: DashboardViewModel
     @ObservedObject var runtimeController: RuntimeController
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Teams Auto Recorder")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(red: 0.1, green: 0.13, blue: 0.24))
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("今の状態")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(runtimeController.statusText)
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(runtimeController.statusText.contains("録音中") ? .red : .primary)
-                }
-                Text("最後の結果")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
-                Text(runtimeController.lastResultText)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(runtimeController.lastResultText.contains("失敗") ? .red : .secondary)
-
-                Button(action: { runtimeController.toggleManualRecording() }) {
-                    Label(
-                        runtimeController.isManuallyRecording ? "録音停止" : "手動録音",
-                        systemImage: runtimeController.isManuallyRecording ? "stop.circle.fill" : "record.circle"
-                    )
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(runtimeController.isManuallyRecording ? .red : .accentColor)
-
-                Toggle("ログイン時に自動起動", isOn: Binding(
-                    get: { viewModel.launchAtLoginEnabled },
-                    set: { viewModel.setLaunchAtLoginEnabled($0) }
-                ))
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                .toggleStyle(.switch)
-
-                if let error = viewModel.errorMessage {
-                    Text(error)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.red)
-                }
-            }
-            .padding(18)
-            .background(Color.white.opacity(0.88))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("保存済み会議")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-
-                if viewModel.sessions.isEmpty {
-                    Text("保存済み会議はまだありません。")
-                        .foregroundStyle(.secondary)
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                } else {
-                    List(viewModel.sessions, id: \.sessionID) { session in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(session.sessionID)
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                            Text(timeLabel(session: session))
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundStyle(.secondary)
-                            Text(session.transcriptText)
-                                .lineLimit(2)
-                                .font(.system(size: 13, weight: .regular, design: .rounded))
-                        }
-                        .padding(.vertical, 6)
-                    }
-                    .listStyle(.inset)
-                    .frame(maxHeight: .infinity)
-                }
-            }
-            .padding(18)
-            .background(Color.white.opacity(0.88))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        HStack(spacing: 0) {
+            SidebarView(viewModel: viewModel, runtimeController: runtimeController)
+                .frame(width: 272)
+            Rectangle()
+                .fill(Color.obsidianBorder)
+                .frame(width: 1)
+            SessionsPanel(viewModel: viewModel)
         }
-        .padding(24)
-    }
-
-    private func timeLabel(session: SessionRecord) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .medium
-        let start = Date(timeIntervalSince1970: session.startedAt)
-        let end = Date(timeIntervalSince1970: session.endedAt)
-        return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
+        .background(Color.obsidianBase)
+        .preferredColorScheme(.dark)
     }
 }
+
+// MARK: - Sidebar
+
+private struct SidebarView: View {
+    @ObservedObject var viewModel: DashboardViewModel
+    @ObservedObject var runtimeController: RuntimeController
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            BrandHeader()
+            Divider().background(Color.obsidianBorder)
+            StatusSection(runtimeController: runtimeController)
+            Divider().background(Color.obsidianBorder)
+            ControlsSection(viewModel: viewModel, runtimeController: runtimeController)
+            Spacer()
+            SidebarFooter()
+        }
+        .background(Color.obsidianPanel)
+    }
+}
+
+private struct BrandHeader: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.amber.opacity(0.15))
+                        .frame(width: 32, height: 32)
+                    Image(systemName: "waveform.circle.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.amber)
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Teams Auto Recorder")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Color.inkPrimary)
+                    Text("会議録音・文字起こし")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(Color.inkMuted)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 22)
+        .padding(.bottom, 18)
+    }
+}
+
+private struct StatusSection: View {
+    @ObservedObject var runtimeController: RuntimeController
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionLabel(title: "現在の状態")
+            StatusIndicatorView(runtimeController: runtimeController)
+
+            VStack(alignment: .leading, spacing: 5) {
+                SectionLabel(title: "最後の結果")
+                Text(runtimeController.lastResultText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(
+                        runtimeController.lastResultText.contains("失敗")
+                            ? Color.recRed
+                            : Color.inkSecondary
+                    )
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 18)
+    }
+}
+
+private struct ControlsSection: View {
+    @ObservedObject var viewModel: DashboardViewModel
+    @ObservedObject var runtimeController: RuntimeController
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(title: "操作")
+            RecordButton(runtimeController: runtimeController)
+
+            LaunchToggle(
+                isOn: Binding(
+                    get: { viewModel.launchAtLoginEnabled },
+                    set: { viewModel.setLaunchAtLoginEnabled($0) }
+                )
+            )
+
+            if let error = viewModel.errorMessage {
+                ErrorBanner(message: error)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 18)
+    }
+}
+
+private struct SidebarFooter: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Color.okGreen.opacity(0.7))
+                .frame(width: 5, height: 5)
+            Text("TAR v1.0")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.inkDim)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 14)
+    }
+}
+
+// MARK: - Status Indicator
+
+private struct StatusIndicatorView: View {
+    @ObservedObject var runtimeController: RuntimeController
+    @State private var pulseScale: CGFloat = 1.0
+    @State private var pulseOpacity: Double = 0.6
+
+    private var isRecording: Bool { runtimeController.statusText.contains("録音中") }
+    private var isProcessing: Bool { runtimeController.statusText.contains("文字起こし中") }
+    private var isError: Bool { runtimeController.statusText.contains("権限不足") || runtimeController.statusText.contains("エラー") }
+
+    private var dotColor: Color {
+        if isRecording  { return .recRed }
+        if isProcessing { return .amber  }
+        if isError      { return .recRed }
+        return .okGreen
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                if isRecording {
+                    Circle()
+                        .fill(Color.recRed.opacity(pulseOpacity))
+                        .frame(width: 28, height: 28)
+                        .scaleEffect(pulseScale)
+                }
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: 9, height: 9)
+                    .shadow(color: dotColor.opacity(0.8), radius: 4)
+            }
+            .frame(width: 28, height: 28)
+
+            Text(runtimeController.statusText)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.inkPrimary)
+        }
+        .onAppear { animateIfNeeded() }
+        .onChange(of: isRecording) { animateIfNeeded() }
+    }
+
+    private func animateIfNeeded() {
+        if isRecording {
+            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
+                pulseScale = 2.4
+                pulseOpacity = 0.0
+            }
+        } else {
+            withAnimation(.default) {
+                pulseScale = 1.0
+                pulseOpacity = 0.6
+            }
+        }
+    }
+}
+
+// MARK: - Record Button
+
+private struct RecordButton: View {
+    @ObservedObject var runtimeController: RuntimeController
+    @State private var isHovered = false
+
+    private var isRecording: Bool { runtimeController.isManuallyRecording }
+
+    var body: some View {
+        Button(action: { runtimeController.toggleManualRecording() }) {
+            HStack(spacing: 10) {
+                Image(systemName: isRecording ? "stop.fill" : "circle.fill")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(isRecording ? Color.recRed : Color.amber)
+                    .frame(width: 16)
+                Text(isRecording ? "録音を停止" : "手動録音を開始")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.inkPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Color.inkMuted)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isHovered ? Color.obsidianHover : Color.obsidianSurface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(
+                                isRecording
+                                    ? Color.recRed.opacity(0.45)
+                                    : (isHovered ? Color.obsidianBorder.opacity(1.5) : Color.obsidianBorder),
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .animation(.easeInOut(duration: 0.12), value: isHovered)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+    }
+}
+
+// MARK: - Launch Toggle
+
+private struct LaunchToggle: View {
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack {
+            HStack(spacing: 8) {
+                Image(systemName: "power")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.inkMuted)
+                Text("ログイン時に自動起動")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.inkSecondary)
+            }
+            Spacer()
+            MiniToggle(isOn: $isOn)
+        }
+    }
+}
+
+private struct MiniToggle: View {
+    @Binding var isOn: Bool
+
+    var body: some View {
+        ZStack(alignment: isOn ? .trailing : .leading) {
+            RoundedRectangle(cornerRadius: 100)
+                .fill(isOn ? Color.okGreen.opacity(0.75) : Color.obsidianBorder)
+                .frame(width: 36, height: 20)
+            Circle()
+                .fill(Color.white.opacity(0.95))
+                .frame(width: 16, height: 16)
+                .padding(.horizontal, 2)
+                .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+        }
+        .animation(.easeInOut(duration: 0.18), value: isOn)
+        .onTapGesture { isOn.toggle() }
+    }
+}
+
+// MARK: - Error Banner
+
+private struct ErrorBanner: View {
+    let message: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 10))
+                .foregroundStyle(Color.recRed)
+                .padding(.top, 1)
+            Text(message)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.recRed.opacity(0.9))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.recRed.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.recRed.opacity(0.25), lineWidth: 1)
+                )
+        )
+    }
+}
+
+// MARK: - Section Label
+
+private struct SectionLabel: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(Color.inkDim)
+            .tracking(1.0)
+            .textCase(.uppercase)
+    }
+}
+
+// MARK: - Sessions Panel
+
+private struct SessionsPanel: View {
+    @ObservedObject var viewModel: DashboardViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SessionsPanelHeader(count: viewModel.sessions.count)
+            Divider().background(Color.obsidianBorder)
+
+            if viewModel.sessions.isEmpty {
+                EmptySessionsView()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(viewModel.sessions, id: \.sessionID) { session in
+                            SessionRowView(session: session)
+                            Rectangle()
+                                .fill(Color.obsidianBorder.opacity(0.6))
+                                .frame(height: 1)
+                                .padding(.leading, 56)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.obsidianBase)
+    }
+}
+
+private struct SessionsPanelHeader: View {
+    let count: Int
+
+    var body: some View {
+        HStack(alignment: .lastTextBaseline) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("会議記録")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Color.inkPrimary)
+                Text("録音・文字起こし済みセッション")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.inkMuted)
+            }
+            Spacer()
+            if count > 0 {
+                Text("\(count)")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.inkMuted)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 3)
+                    .background(Color.obsidianSurface)
+                    .overlay(
+                        Capsule().strokeBorder(Color.obsidianBorder, lineWidth: 1)
+                    )
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 28)
+        .padding(.top, 26)
+        .padding(.bottom, 18)
+    }
+}
+
+// MARK: - Empty State
+
+private struct EmptySessionsView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "waveform.slash")
+                .font(.system(size: 44, weight: .ultraLight))
+                .foregroundStyle(Color.inkDim)
+            VStack(spacing: 6) {
+                Text("記録なし")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.inkMuted)
+                Text("Teams 会議が検知されると\n自動的に録音・文字起こしを行います")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.inkDim)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.bottom, 80)
+    }
+}
+
+// MARK: - Session Row
+
+private struct SessionRowView: View {
+    let session: SessionRecord
+    @State private var isHovered = false
+
+    private var isFailed: Bool {
+        session.transcriptText.hasPrefix("[transcription failed]")
+    }
+    private var accentColor: Color { isFailed ? .recRed : .okGreen }
+
+    private var displayText: String {
+        if isFailed {
+            let raw = session.transcriptText
+                .replacingOccurrences(of: "[transcription failed] ", with: "")
+            return TranscriptionFailureMessageFormatter.userVisibleMessage(from: raw)
+        }
+        return session.transcriptText.isEmpty ? "（文字起こしなし）" : session.transcriptText
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            // Left accent bar
+            Rectangle()
+                .fill(accentColor.opacity(isHovered ? 1.0 : 0.7))
+                .frame(width: 2.5)
+                .padding(.vertical, 14)
+                .padding(.leading, 28)
+                .animation(.easeInOut(duration: 0.12), value: isHovered)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .center, spacing: 0) {
+                    Text(session.sessionID)
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Color.amber)
+                    Spacer()
+                    HStack(spacing: 6) {
+                        Image(systemName: isFailed ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(accentColor)
+                        Text(durationLabel)
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Color.inkMuted)
+                    }
+                }
+
+                Text(dateTimeLabel)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.inkMuted)
+
+                Text(displayText)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(isFailed ? Color.recRed.opacity(0.85) : Color.inkSecondary)
+                    .lineLimit(2)
+                    .lineSpacing(2)
+            }
+            .padding(.leading, 14)
+            .padding(.trailing, 28)
+            .padding(.vertical, 14)
+        }
+        .background(
+            isHovered ? Color.obsidianHover : Color.clear
+        )
+        .animation(.easeInOut(duration: 0.10), value: isHovered)
+        .onHover { isHovered = $0 }
+    }
+
+    private var dateTimeLabel: String {
+        let f = DateFormatter()
+        f.dateStyle = .short
+        f.timeStyle = .short
+        f.locale = Locale(identifier: "ja_JP")
+        let start = Date(timeIntervalSince1970: session.startedAt)
+        let end = Date(timeIntervalSince1970: session.endedAt)
+        return "\(f.string(from: start))  →  \(f.string(from: end))"
+    }
+
+    private var durationLabel: String {
+        let secs = Int(max(0, session.endedAt - session.startedAt))
+        guard secs > 0 else { return "—" }
+        return secs < 60 ? "\(secs)s" : "\(secs / 60)m \(secs % 60)s"
+    }
+}
+
+// MARK: - Factory & Fallbacks
 
 private enum DashboardFactory {
     @MainActor
@@ -159,6 +569,8 @@ private final class FallbackLaunchAtLoginManager: LaunchAtLoginManaging {
     var isEnabled: Bool { false }
     func setEnabled(_ enabled: Bool) throws {}
 }
+
+// MARK: - Runtime Controller
 
 @MainActor
 private final class RuntimeController: ObservableObject {
@@ -348,6 +760,8 @@ private final class RuntimeController: ObservableObject {
         }
     }
 }
+
+// MARK: - MicrophoneLevelMonitor
 
 private final class MicrophoneLevelMonitor {
     private let engine = AVAudioEngine()
