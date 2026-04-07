@@ -22,6 +22,9 @@ struct TeamsAutoRecorderApp: App {
                     runtimeController.startIfNeeded(notificationSink: notificationSink) {
                         viewModel.loadSessions()
                     }
+                    if UserDefaults.standard.bool(forKey: "mcpServerEnabled") {
+                        viewModel.setMCPServerEnabled(true)
+                    }
                 }
         }
     }

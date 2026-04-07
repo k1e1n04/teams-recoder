@@ -98,6 +98,7 @@ public final class DashboardViewModel: ObservableObject {
             do {
                 try controller.start()
                 mcpServerEnabled = controller.isRunning
+                UserDefaults.standard.set(true, forKey: "mcpServerEnabled")
                 errorMessage = nil
             } catch {
                 mcpServerEnabled = false
@@ -106,6 +107,7 @@ public final class DashboardViewModel: ObservableObject {
         } else {
             controller.stop()
             mcpServerEnabled = false
+            UserDefaults.standard.set(false, forKey: "mcpServerEnabled")
             errorMessage = nil
         }
     }
