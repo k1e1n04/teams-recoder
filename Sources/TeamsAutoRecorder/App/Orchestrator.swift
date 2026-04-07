@@ -8,6 +8,12 @@ public final class RecorderOrchestrator {
     private let worker: TranscriptionWorker
     private var appStateMachine = AppStateMachine()
     private var currentSessionStartedAt: Date?
+    private var manualSessionCounter = 0
+
+    public var isRecording: Bool {
+        if case .recording = appStateMachine.state { return true }
+        return false
+    }
 
     public init(
         detector: MeetingDetector,
@@ -34,40 +40,58 @@ public final class RecorderOrchestrator {
 
         switch event {
         case let .started(sessionID):
+            guard appStateMachine.startRecording(sessionID: sessionID, startedAt: now) else {
+                return nil
+            }
             currentSessionStartedAt = now
-            _ = appStateMachine.startRecording(sessionID: sessionID, startedAt: now)
             try? captureEngine.start(sessionID: sessionID)
             try? captureEngine.appendTeams(samples: [1], timestamp: now.timeIntervalSince1970)
             try? captureEngine.appendMic(samples: [1], timestamp: now.timeIntervalSince1970)
             return event
 
         case let .stopped(sessionID):
-            _ = appStateMachine.startTranscription()
-            guard let artifact = try? captureEngine.stop() else {
-                appStateMachine.reset()
-                return event
-            }
-
-            let result = await worker.run(job: .init(sessionID: sessionID, audioURL: artifact.mixedAudioURL))
-            switch result {
-            case let .success(transcript):
-                let startedAt = currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970
-                let record = SessionRecord(
-                    sessionID: sessionID,
-                    startedAt: startedAt,
-                    endedAt: now.timeIntervalSince1970,
-                    transcriptText: transcript.fullText
-                )
-                try? repository.saveSession(record)
-                _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
-            case .failure:
-                appStateMachine.reset()
-            }
-
+            await finishSession(sessionID: sessionID, now: now)
             return .stopped(sessionID: sessionID)
 
         case .fallbackToNotifyOnly:
             return .fallbackToNotifyOnly
+        }
+    }
+
+    public func startManualRecording(now: Date = Date()) throws {
+        manualSessionCounter += 1
+        let sessionID = "manual-\(manualSessionCounter)"
+        guard appStateMachine.startRecording(sessionID: sessionID, startedAt: now) else { return }
+        currentSessionStartedAt = now
+        try captureEngine.start(sessionID: sessionID)
+    }
+
+    public func stopManualRecording(now: Date = Date()) async {
+        guard case let .recording(sessionID) = appStateMachine.state else { return }
+        await finishSession(sessionID: sessionID, now: now)
+    }
+
+    private func finishSession(sessionID: String, now: Date) async {
+        _ = appStateMachine.startTranscription()
+        guard let artifact = try? captureEngine.stop() else {
+            appStateMachine.reset()
+            return
+        }
+
+        let result = await worker.run(job: .init(sessionID: sessionID, audioURL: artifact.mixedAudioURL))
+        switch result {
+        case let .success(transcript):
+            let startedAt = currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970
+            let record = SessionRecord(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                endedAt: now.timeIntervalSince1970,
+                transcriptText: transcript.fullText
+            )
+            try? repository.saveSession(record)
+            _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
+        case .failure:
+            appStateMachine.reset()
         }
     }
 }
@@ -134,6 +158,16 @@ public final class RecorderRuntime {
         self.audioSignalProvider = audioSignalProvider
         self.orchestrator = orchestrator
         self.tickHandler = nil
+    }
+
+    public var isRecording: Bool { orchestrator?.isRecording ?? false }
+
+    public func startManualRecording(now: Date = Date()) throws {
+        try orchestrator?.startManualRecording(now: now)
+    }
+
+    public func stopManualRecording(now: Date = Date()) async {
+        await orchestrator?.stopManualRecording(now: now)
     }
 
     @discardableResult

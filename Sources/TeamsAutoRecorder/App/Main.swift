@@ -53,6 +53,16 @@ private struct DashboardView: View {
                         .foregroundStyle(runtimeController.statusText == "録音中" ? .red : .primary)
                 }
 
+                Button(action: { runtimeController.toggleManualRecording() }) {
+                    Label(
+                        runtimeController.isManuallyRecording ? "録音停止" : "手動録音",
+                        systemImage: runtimeController.isManuallyRecording ? "stop.circle.fill" : "record.circle"
+                    )
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(runtimeController.isManuallyRecording ? .red : .accentColor)
+
                 Toggle("ログイン時に自動起動", isOn: Binding(
                     get: { viewModel.launchAtLoginEnabled },
                     set: { viewModel.setLaunchAtLoginEnabled($0) }
@@ -147,6 +157,7 @@ private final class FallbackLaunchAtLoginManager: LaunchAtLoginManaging {
 @MainActor
 private final class RuntimeController: ObservableObject {
     @Published private(set) var statusText: String = "待機中"
+    @Published private(set) var isManuallyRecording: Bool = false
     private let accessibilityMissingStatus = "権限不足: アクセシビリティ"
 
     private var runtime: RecorderRuntime?
@@ -233,8 +244,10 @@ private final class RuntimeController: ObservableObject {
             loopTask = Task { [weak self] in
                 while !Task.isCancelled {
                     guard let self else { return }
-                    if let event = await self.runtime?.runIteration() {
-                        self.consume(event)
+                    if !self.isManuallyRecording {
+                        if let event = await self.runtime?.runIteration() {
+                            self.consume(event)
+                        }
                     }
                     try? await Task.sleep(for: .seconds(1))
                 }
@@ -296,6 +309,26 @@ private final class RuntimeController: ObservableObject {
             onSessionSaved?()
         case .fallbackToNotifyOnly:
             statusText = "通知のみ"
+        }
+    }
+
+    func toggleManualRecording() {
+        if isManuallyRecording {
+            isManuallyRecording = false
+            statusText = "文字起こし中..."
+            Task { @MainActor in
+                await self.runtime?.stopManualRecording()
+                self.statusText = "待機中"
+                self.onSessionSaved?()
+            }
+        } else {
+            do {
+                try runtime?.startManualRecording()
+                isManuallyRecording = true
+                statusText = "録音中 (手動)"
+            } catch {
+                statusText = "録音開始エラー"
+            }
         }
     }
 }
