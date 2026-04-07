@@ -212,7 +212,9 @@ private final class TeamsLiveCaptureSession: NSObject, LiveCaptureSession {
 
     func stop() throws -> CapturedAudioSamples {
         if let stream {
-            try blockingAsync {
+            // stopCapture() may throw if the source app (Teams/Slack) already exited and
+            // invalidated the stream. Treat that as non-fatal — captured samples are still valid.
+            try? blockingAsync {
                 try await stream.stopCapture()
             }
         }
