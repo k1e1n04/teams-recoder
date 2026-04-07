@@ -928,7 +928,9 @@ private final class RuntimeController: ObservableObject {
                 while !Task.isCancelled {
                     guard let self else { return }
                     if !self.isManuallyRecording {
-                        if let event = await self.runtime?.runIteration() {
+                        if let event = await self.runtime?.runIteration(onTranscriptionStarted: {
+                            self.statusText = "文字起こし中"
+                        }) {
                             self.consume(event)
                         }
                     }

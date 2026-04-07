@@ -31,7 +31,12 @@ public final class RecorderOrchestrator {
     }
 
     @discardableResult
-    public func tick(windowActive: Bool, audioActive: Bool, now: Date) async -> MeetingDetectorEvent? {
+    public func tick(
+        windowActive: Bool,
+        audioActive: Bool,
+        now: Date,
+        onTranscriptionStarted: (@MainActor @Sendable () -> Void)? = nil
+    ) async -> MeetingDetectorEvent? {
         let event = detector.ingest(windowActive: windowActive, audioActive: audioActive, at: now)
         guard let event else {
             if case .recording = appStateMachine.state {
@@ -53,6 +58,9 @@ public final class RecorderOrchestrator {
             return event
 
         case let .stopped(sessionID):
+            if let onTranscriptionStarted {
+                await MainActor.run(body: onTranscriptionStarted)
+            }
             let outcome = await finishSession(sessionID: sessionID, now: now)
             switch outcome {
             case .success:
@@ -199,14 +207,22 @@ public final class RecorderRuntime {
     }
 
     @discardableResult
-    public func runIteration(at now: Date = Date()) async -> MeetingDetectorEvent? {
+    public func runIteration(
+        at now: Date = Date(),
+        onTranscriptionStarted: (@MainActor @Sendable () -> Void)? = nil
+    ) async -> MeetingDetectorEvent? {
         let windowActive = windowSignalProvider.isMeetingWindowActive(at: now)
         var audioActive = audioSignalProvider.isAudioActive(at: now)
         if windowActive {
             audioActive = true
         }
         if let orchestrator {
-            return await orchestrator.tick(windowActive: windowActive, audioActive: audioActive, now: now)
+            return await orchestrator.tick(
+                windowActive: windowActive,
+                audioActive: audioActive,
+                now: now,
+                onTranscriptionStarted: onTranscriptionStarted
+            )
         }
         guard let tickHandler else {
             return nil
