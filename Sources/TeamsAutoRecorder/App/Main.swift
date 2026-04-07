@@ -154,6 +154,7 @@ private final class RuntimeController: ObservableObject {
     private var notificationSink: NotificationSink?
     private var microphoneMonitor: MicrophoneLevelMonitor?
     private let accessibilityTextCollector = TeamsAccessibilityTextCollector()
+    private var hasRequestedAccessibilityTrust = false
 
     func startIfNeeded(notificationSink: NotificationSink, onSessionSaved: @escaping () -> Void) {
         self.onSessionSaved = onSessionSaved
@@ -166,6 +167,7 @@ private final class RuntimeController: ObservableObject {
             permissionChecker.openSystemSettings(for: [.screenRecording])
             return
         }
+        requestAccessibilityTrustIfNeeded()
 
         switch permissionChecker.microphoneAuthorizationStatus() {
         case .authorized:
@@ -242,6 +244,13 @@ private final class RuntimeController: ObservableObject {
 
     deinit {
         loopTask?.cancel()
+    }
+
+    private func requestAccessibilityTrustIfNeeded() {
+        guard !AXIsProcessTrusted(), !hasRequestedAccessibilityTrust else { return }
+        hasRequestedAccessibilityTrust = true
+        let options = [kAXTrustedCheckOptionPrompt as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(options)
     }
 
     private func hasVisibleTeamsWindow() -> Bool {
