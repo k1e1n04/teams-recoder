@@ -469,6 +469,7 @@ private struct SessionsPanel: View {
         .sheet(item: $selectedSession) { session in
             SessionDetailView(
                 session: session,
+                summaryText: viewModel.readSummary(sessionID: session.sessionID),
                 onRename: { newName in
                     viewModel.renameSession(sessionID: session.sessionID, name: newName.isEmpty ? nil : newName)
                     if let idx = viewModel.displayedSessions.firstIndex(where: { $0.sessionID == session.sessionID }) {
@@ -755,6 +756,7 @@ private struct SessionRowView: View {
 
 private struct SessionDetailView: View {
     let session: SessionRecord
+    let summaryText: String?
     let onRename: ((String) -> Void)?
     let onDelete: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
@@ -762,8 +764,9 @@ private struct SessionDetailView: View {
     @State private var isRenaming = false
     @State private var renameText = ""
 
-    init(session: SessionRecord, onRename: ((String) -> Void)? = nil, onDelete: (() -> Void)? = nil) {
+    init(session: SessionRecord, summaryText: String? = nil, onRename: ((String) -> Void)? = nil, onDelete: (() -> Void)? = nil) {
         self.session = session
+        self.summaryText = summaryText
         self.onRename = onRename
         self.onDelete = onDelete
     }
@@ -877,15 +880,96 @@ private struct SessionDetailView: View {
 
             Divider().background(Color.obsidianBorder)
 
-            // Transcript body
+            // Body: summary + transcript in scrollable area
             ScrollView {
-                Text(fullText)
-                    .font(.system(size: 13.5))
-                    .foregroundStyle(isFailed ? Color.recRed.opacity(0.85) : Color.inkSecondary)
-                    .lineSpacing(5)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(28)
+                VStack(alignment: .leading, spacing: 0) {
+                    // Summary section
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            SectionLabel(title: "要約")
+                            Spacer()
+                            if summaryText != nil {
+                                Button {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(summaryText!, forType: .string)
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "doc.on.doc")
+                                            .font(.system(size: 11))
+                                        Text("コピー")
+                                            .font(.system(size: 11))
+                                    }
+                                    .foregroundStyle(Color.inkMuted)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+
+                        if let summary = summaryText {
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.amber)
+                                    .frame(width: 3)
+                                Text(summary)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.inkSecondary)
+                                    .lineSpacing(4)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                            }
+                            .background(Color.obsidianSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        } else {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                                    .foregroundStyle(Color.obsidianBorder)
+                                Text("要約なし")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.inkDim)
+                                    .padding(.vertical, 12)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.top, 20)
+                    .padding(.bottom, 8)
+
+                    Divider().background(Color.obsidianBorder)
+                        .padding(.horizontal, 28)
+
+                    // Transcript section
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            SectionLabel(title: "文字起こし")
+                            Spacer()
+                            Button {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(fullText, forType: .string)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 11))
+                                    Text("コピー")
+                                        .font(.system(size: 11))
+                                }
+                                .foregroundStyle(Color.inkMuted)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Text(fullText)
+                            .font(.system(size: 13.5))
+                            .foregroundStyle(isFailed ? Color.recRed.opacity(0.85) : Color.inkSecondary)
+                            .lineSpacing(5)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.top, 16)
+                    .padding(.bottom, 28)
+                }
             }
         }
         .frame(minWidth: 560, minHeight: 400)
@@ -938,7 +1022,8 @@ private enum DashboardFactory {
                 sessionRenamer: repository,
                 sessionSearcher: repository,
                 launchAtLoginManager: SystemLaunchAtLoginManager(),
-                mcpServerController: mcpController
+                mcpServerController: mcpController,
+                summaryStore: summaryStore
             )
         } catch {
             return DashboardViewModel(
