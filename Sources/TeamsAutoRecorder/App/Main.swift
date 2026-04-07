@@ -219,7 +219,7 @@ private struct StatusIndicatorView: View {
                 .foregroundStyle(Color.inkPrimary)
         }
         .onAppear { animateIfNeeded() }
-        .onChange(of: isRecording) { animateIfNeeded() }
+        .onChange(of: isRecording) { _ in animateIfNeeded() }
     }
 
     private func animateIfNeeded() {
