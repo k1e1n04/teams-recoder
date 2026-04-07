@@ -26,23 +26,7 @@ public final class TeamsWindowOCRTextCollector {
 
         var texts: [String] = []
         for info in windowInfo {
-            guard
-                let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t,
-                processIDs.contains(ownerPID),
-                let layer = info[kCGWindowLayer as String] as? Int,
-                layer == 0
-            else {
-                continue
-            }
-
-            if let alpha = info[kCGWindowAlpha as String] as? Double, alpha <= 0 {
-                continue
-            }
-
-            if let bounds = info[kCGWindowBounds as String] as? [String: Any],
-               let width = bounds["Width"] as? Double,
-               let height = bounds["Height"] as? Double,
-               width < 200 || height < 120 {
+            guard Self.shouldProcessWindowInfo(info, processIDs: processIDs) else {
                 continue
             }
 
@@ -89,5 +73,38 @@ public final class TeamsWindowOCRTextCollector {
             }
         }
         return texts
+    }
+
+    static func shouldProcessWindowInfo(
+        _ info: [String: Any],
+        processIDs: Set<pid_t>
+    ) -> Bool {
+        let ownerPID: pid_t
+        if let pid = info[kCGWindowOwnerPID as String] as? pid_t {
+            ownerPID = pid
+        } else if let number = info[kCGWindowOwnerPID as String] as? NSNumber {
+            ownerPID = pid_t(number.int32Value)
+        } else if let integer = info[kCGWindowOwnerPID as String] as? Int {
+            ownerPID = pid_t(integer)
+        } else {
+            return false
+        }
+
+        guard processIDs.contains(ownerPID) else {
+            return false
+        }
+
+        if let alpha = info[kCGWindowAlpha as String] as? Double, alpha <= 0 {
+            return false
+        }
+
+        if let bounds = info[kCGWindowBounds as String] as? [String: Any],
+           let width = bounds["Width"] as? Double,
+           let height = bounds["Height"] as? Double,
+           width < 200 || height < 120 {
+            return false
+        }
+
+        return true
     }
 }
