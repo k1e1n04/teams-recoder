@@ -69,6 +69,7 @@ public final class MeetingDetector {
         if audioWindow.count > config.audioWindowSeconds {
             audioWindow.removeFirst(audioWindow.count - config.audioWindowSeconds)
         }
+        let currentAudioRatio = Double(audioWindow.filter { $0 }.count) / Double(max(audioWindow.count, 1))
 
         switch mode {
         case .idle:
@@ -79,7 +80,7 @@ public final class MeetingDetector {
                 return .started(sessionID: sessionID)
             }
         case let .recording(sessionID, startedAt):
-            let shouldStop = !windowActive
+            let shouldStop = !windowActive || currentAudioRatio < config.audioRequiredRatio
             if shouldStop {
                 stopStreakSeconds += 1
             } else {

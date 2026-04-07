@@ -29,4 +29,25 @@ final class MeetingDetectorTests: XCTestCase {
         let stop = detector.ingest(windowActive: false, audioActive: false, at: base.addingTimeInterval(5))
         XCTAssertEqual(stop, .stopped(sessionID: "session-0"))
     }
+
+    func testStopsWhenAudioDropsEvenIfWindowRemainsActive() {
+        let config = MeetingDetectorConfig(
+            startUISeconds: 1,
+            audioWindowSeconds: 2,
+            audioRequiredRatio: 0.5,
+            stopGraceSeconds: 2,
+            minRecordingSeconds: 5,
+            falsePositiveCapPerDay: 2
+        )
+        let detector = MeetingDetector(config: config)
+        let base = Date(timeIntervalSince1970: 0)
+
+        _ = detector.ingest(windowActive: true, audioActive: true, at: base)
+        XCTAssertNil(detector.ingest(windowActive: true, audioActive: false, at: base.addingTimeInterval(1)))
+        XCTAssertNil(detector.ingest(windowActive: true, audioActive: false, at: base.addingTimeInterval(2)))
+        XCTAssertNil(detector.ingest(windowActive: true, audioActive: false, at: base.addingTimeInterval(4)))
+
+        let stop = detector.ingest(windowActive: true, audioActive: false, at: base.addingTimeInterval(5))
+        XCTAssertEqual(stop, .stopped(sessionID: "session-0"))
+    }
 }

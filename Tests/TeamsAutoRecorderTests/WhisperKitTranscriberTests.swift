@@ -86,6 +86,12 @@ final class WhisperKitTranscriberTests: XCTestCase {
             XCTFail("Unexpected error: \(error)")
         }
     }
+
+    func testDefaultInferencerSanitizeKeepsParenthesesAndBrackets() {
+        let input = "<|startoftranscript|>(hello) [note] こんにちは<|endoftext|>"
+        let cleaned = DefaultWhisperInferencer.sanitizeSegmentText(input)
+        XCTAssertEqual(cleaned, "(hello) [note] こんにちは")
+    }
 }
 
 private struct FakeModelManager: WhisperModelManaging {

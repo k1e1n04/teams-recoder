@@ -13,14 +13,16 @@ public final class DefaultWhisperInferencer: WhisperInferencing {
         let result = try await whisper.transcribe(audioArray: samples, decodeOptions: options)
         return result.flatMap { item in
             item.segments.compactMap { segment in
-                let cleaned = segment.text
-                    .replacingOccurrences(of: "<\\|[^|]+\\|>", with: "", options: .regularExpression)
-                    .replacingOccurrences(of: "\\([^)]*\\)", with: "", options: .regularExpression)
-                    .replacingOccurrences(of: "\\[[^\\]]*\\]", with: "", options: .regularExpression)
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let cleaned = Self.sanitizeSegmentText(segment.text)
                 guard !cleaned.isEmpty else { return nil }
                 return TranscriptSegment(start: Double(segment.start), end: Double(segment.end), text: cleaned)
             }
         }
+    }
+
+    static func sanitizeSegmentText(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "<\\|[^|]+\\|>", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
