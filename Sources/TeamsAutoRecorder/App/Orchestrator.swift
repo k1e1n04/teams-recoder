@@ -106,6 +106,7 @@ public final class RecorderOrchestrator {
             )
             try? repository.saveSession(record)
             _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
+            appStateMachine.reset()
             return .success
         case let .failure(failure):
             let startedAt = currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970
@@ -117,6 +118,7 @@ public final class RecorderOrchestrator {
             )
             try? repository.saveSession(record)
             _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
+            appStateMachine.reset()
             return .failure(failure.description)
         }
     }
