@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import AVFoundation
 import CoreGraphics
+import ApplicationServices
 
 @main
 struct TeamsAutoRecorderApp: App {
@@ -152,6 +153,7 @@ private final class RuntimeController: ObservableObject {
     private var onSessionSaved: (() -> Void)?
     private var notificationSink: NotificationSink?
     private var microphoneMonitor: MicrophoneLevelMonitor?
+    private let accessibilityTextCollector = TeamsAccessibilityTextCollector()
 
     func startIfNeeded(notificationSink: NotificationSink, onSessionSaved: @escaping () -> Void) {
         self.onSessionSaved = onSessionSaved
@@ -247,41 +249,16 @@ private final class RuntimeController: ObservableObject {
         let runningApps = candidateBundleIDs
             .flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0) }
             .filter { !$0.isTerminated }
-        let pids = Set(runningApps.map(\.processIdentifier))
-        guard !pids.isEmpty else { return false }
+        guard !runningApps.isEmpty else { return false }
 
-        guard let windowInfo = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
-                as? [[String: Any]] else {
-            return false
+        let accessibilityTrusted = AXIsProcessTrusted()
+        let visibleTexts = runningApps.flatMap { app in
+            accessibilityTextCollector.collectTexts(for: app.processIdentifier)
         }
-
-        var titles: [String] = []
-        for info in windowInfo {
-            guard
-                let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t,
-                pids.contains(ownerPID),
-                let layer = info[kCGWindowLayer as String] as? Int,
-                layer == 0
-            else {
-                continue
-            }
-
-            if let alpha = info[kCGWindowAlpha as String] as? Double, alpha <= 0 {
-                continue
-            }
-
-            if let bounds = info[kCGWindowBounds as String] as? [String: Any],
-               let width = bounds["Width"] as? Double,
-               let height = bounds["Height"] as? Double,
-               width < 200 || height < 120 {
-                continue
-            }
-
-            let title = (info[kCGWindowName as String] as? String) ?? ""
-            titles.append(title)
-        }
-
-        return TeamsMeetingWindowClassifier.allKeywordsExist(in: titles)
+        return TeamsMeetingControlEvaluator.isMeetingUIActive(
+            accessibilityTrusted: accessibilityTrusted,
+            visibleTexts: visibleTexts
+        )
     }
 
     private func consume(_ event: MeetingDetectorEvent) {
