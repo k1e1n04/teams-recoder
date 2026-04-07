@@ -26,6 +26,7 @@ targets:
       base:
         INFOPLIST_KEY_CFBundleDisplayName: TeamsAutoRecorder
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: 会議の音声を録音するためにマイクへのアクセスが必要です。
         GENERATE_INFOPLIST_FILE: YES
         MACOSX_DEPLOYMENT_TARGET: 13.0
 schemes:
