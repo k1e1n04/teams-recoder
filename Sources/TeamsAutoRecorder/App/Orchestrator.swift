@@ -182,7 +182,6 @@ public struct AppBootstrap {
         let modelManager = WhisperModelManager(baseDirectory: modelsDir, downloader: DefaultWhisperModelDownloader())
         let transcriber = WhisperKitTranscriber(
             modelManager: modelManager,
-            normalizer: AudioNormalizer(),
             inferencer: DefaultWhisperInferencer()
         )
         return RecorderOrchestrator(

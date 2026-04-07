@@ -31,29 +31,25 @@ public protocol AudioTranscribing {
 
 public enum WhisperTranscriberError: Error {
     case modelLoadFailed(String)
-    case audioNormalizationFailed(String)
     case inferenceFailed(String)
 }
 
 public protocol WhisperInferencing {
-    func transcribe(samples: [Float], sampleRate: Double, modelPath: URL) async throws -> [TranscriptSegment]
+    func transcribe(audioURL: URL, modelPath: URL) async throws -> [TranscriptSegment]
 }
 
 public final class WhisperKitTranscriber: AudioTranscribing {
     private let modelName: String
     private let modelManager: WhisperModelManaging
-    private let normalizer: AudioNormalizing
     private let inferencer: WhisperInferencing
 
     public init(
         modelName: String = "small",
         modelManager: WhisperModelManaging,
-        normalizer: AudioNormalizing,
         inferencer: WhisperInferencing
     ) {
         self.modelName = modelName
         self.modelManager = modelManager
-        self.normalizer = normalizer
         self.inferencer = inferencer
     }
 
@@ -65,19 +61,8 @@ public final class WhisperKitTranscriber: AudioTranscribing {
             throw WhisperTranscriberError.modelLoadFailed(String(describing: error))
         }
 
-        let normalized: NormalizedAudio
         do {
-            normalized = try normalizer.normalize(audioURL: audioURL)
-        } catch {
-            throw WhisperTranscriberError.audioNormalizationFailed(String(describing: error))
-        }
-
-        do {
-            let segments = try await inferencer.transcribe(
-                samples: normalized.samples,
-                sampleRate: normalized.sampleRate,
-                modelPath: modelURL
-            )
+            let segments = try await inferencer.transcribe(audioURL: audioURL, modelPath: modelURL)
             let fullText = segments
                 .map(\.text)
                 .joined(separator: " ")

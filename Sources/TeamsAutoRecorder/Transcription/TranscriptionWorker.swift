@@ -65,8 +65,6 @@ public struct TranscriptionWorker {
         switch error {
         case let WhisperTranscriberError.modelLoadFailed(description):
             return .init(attempts: attempts, stage: .modelResolve, description: description)
-        case let WhisperTranscriberError.audioNormalizationFailed(description):
-            return .init(attempts: attempts, stage: .audioNormalize, description: description)
         case let WhisperTranscriberError.inferenceFailed(description):
             return .init(attempts: attempts, stage: .whisperInfer, description: description)
         default:
