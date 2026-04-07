@@ -166,4 +166,24 @@ public protocol SessionListing {
     func fetchRecentSessions(limit: Int) throws -> [SessionRecord]
 }
 
+public protocol SessionDeleting {
+    func deleteSession(sessionID: String) throws
+}
+
 extension SessionRepository: SessionListing {}
+extension SessionRepository: SessionDeleting {
+    public func deleteSession(sessionID: String) throws {
+        for sql in [
+            "DELETE FROM transcript_segments WHERE session_id = ?;",
+            "DELETE FROM transcript_jobs WHERE session_id = ?;",
+            "DELETE FROM sessions WHERE session_id = ?;"
+        ] {
+            let stmt = try database.prepare(sql)
+            defer { database.finalize(stmt) }
+            bindText(sessionID, to: stmt, index: 1)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw DatabaseError.executionFailed(message: String(cString: sqlite3_errmsg(database.rawHandle)))
+            }
+        }
+    }
+}

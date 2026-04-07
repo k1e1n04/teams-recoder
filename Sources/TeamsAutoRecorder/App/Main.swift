@@ -396,7 +396,10 @@ private struct SessionsPanel: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.obsidianBase)
         .sheet(item: $selectedSession) { session in
-            SessionDetailView(session: session)
+            SessionDetailView(session: session) {
+                viewModel.deleteSession(sessionID: session.sessionID)
+                selectedSession = nil
+            }
         }
     }
 }
@@ -546,7 +549,14 @@ private struct SessionRowView: View {
 
 private struct SessionDetailView: View {
     let session: SessionRecord
+    let onDelete: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
+    @State private var showDeleteConfirmation = false
+
+    init(session: SessionRecord, onDelete: (() -> Void)? = nil) {
+        self.session = session
+        self.onDelete = onDelete
+    }
 
     private var isFailed: Bool {
         session.transcriptText.hasPrefix("[transcription failed]")
@@ -598,12 +608,23 @@ private struct SessionDetailView: View {
                     }
                 }
                 Spacer()
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color.inkDim)
+                HStack(spacing: 12) {
+                    if onDelete != nil {
+                        Button(action: { showDeleteConfirmation = true }) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.recRed.opacity(0.8))
+                        }
+                        .buttonStyle(.plain)
+                        .help("このセッションを削除")
+                    }
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color.inkDim)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 28)
             .padding(.top, 26)
@@ -625,6 +646,18 @@ private struct SessionDetailView: View {
         .frame(minWidth: 560, minHeight: 400)
         .background(Color.obsidianBase)
         .preferredColorScheme(.dark)
+        .confirmationDialog(
+            "このセッションを削除しますか？",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("削除", role: .destructive) {
+                onDelete?()
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("この操作は元に戻せません。")
+        }
     }
 }
 
@@ -641,6 +674,7 @@ private enum DashboardFactory {
             let repository = SessionRepository(database: database, fileManager: .default)
             return DashboardViewModel(
                 sessionProvider: repository,
+                sessionDeleter: repository,
                 launchAtLoginManager: SystemLaunchAtLoginManager()
             )
         } catch {
