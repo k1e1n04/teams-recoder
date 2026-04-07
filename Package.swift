@@ -10,13 +10,15 @@ let package = Package(
         .library(name: "TeamsAutoRecorder", targets: ["TeamsAutoRecorder"])
     ],
     dependencies: [
-        .package(url: "https://github.com/argmaxinc/WhisperKit.git", from: "0.12.0")
+        .package(url: "https://github.com/argmaxinc/WhisperKit.git", from: "0.12.0"),
+        .package(url: "https://github.com/modelcontextprotocol/swift-sdk.git", from: "0.7.0")
     ],
     targets: [
         .target(
             name: "TeamsAutoRecorder",
             dependencies: [
-                .product(name: "WhisperKit", package: "WhisperKit")
+                .product(name: "WhisperKit", package: "WhisperKit"),
+                .product(name: "MCP", package: "swift-sdk")
             ],
             exclude: ["App/Main.swift", "Assets.xcassets"]
         ),
