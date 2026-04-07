@@ -11,6 +11,7 @@
 		0954B63ABE167108494A615B /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E0F1E1512929AD5C6BCFB5 /* MenuBarController.swift */; };
 		0E0BC369150DF854F3AC12EF /* AppSupportDirectoryResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FE270A018DD92542567B4E9 /* AppSupportDirectoryResolver.swift */; };
 		1E6B86AA48FA6BCB22B04908 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3187CA4344D0C2789FDBB2A /* AppState.swift */; };
+		233318A46E99CCF086632FE9 /* AudioSignalProviderFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635EBD87448D7E49DC719226 /* AudioSignalProviderFactory.swift */; };
 		2FC63D5B945056AEA4C1001A /* FallbackAudioSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */; };
 		40EDC1295F63C6BD1A99D580 /* DefaultWhisperInferencer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DCADF51CAD7B23159EA763A /* DefaultWhisperInferencer.swift */; };
 		4CC38E9EDE2174C3505915E7 /* Orchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728CBA3A55318797F526CADD /* Orchestrator.swift */; };
@@ -29,6 +30,7 @@
 		A8B33A843C0A72AA7FC59C71 /* WhisperModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98E80DB113D0DD0BBFE116A /* WhisperModelManager.swift */; };
 		AD139C6284592E7A613AB886 /* WhisperModelManaging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A31F2F6597B9A816A563AC1 /* WhisperModelManaging.swift */; };
 		BD3539E4A74B6324E7F913FA /* AudioNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97EC698A57C0B8AAE5F97C85 /* AudioNormalizer.swift */; };
+		D621AEA98CBC019063184490 /* TeamsMeetingWindowClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F9969BB62AD45E6039F224 /* TeamsMeetingWindowClassifier.swift */; };
 		F024C025090C661851254440 /* WhisperKitTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62BD51C27DFD71159FDB7479 /* WhisperKitTranscriber.swift */; };
 		F7D0B0CB608C8B43D83265C4 /* DefaultWhisperModelDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67773F507000A9EC666439C3 /* DefaultWhisperModelDownloader.swift */; };
 		F87F2D45085DE51C0CDA3997 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DBBCF66849CD7664A63F19EB /* Assets.xcassets */; };
@@ -46,8 +48,10 @@
 		580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsAudioSignalProvider.swift; sourceTree = "<group>"; };
 		5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FallbackAudioSignalProvider.swift; sourceTree = "<group>"; };
 		62BD51C27DFD71159FDB7479 /* WhisperKitTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitTranscriber.swift; sourceTree = "<group>"; };
+		635EBD87448D7E49DC719226 /* AudioSignalProviderFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSignalProviderFactory.swift; sourceTree = "<group>"; };
 		67773F507000A9EC666439C3 /* DefaultWhisperModelDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultWhisperModelDownloader.swift; sourceTree = "<group>"; };
 		728CBA3A55318797F526CADD /* Orchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Orchestrator.swift; sourceTree = "<group>"; };
+		74F9969BB62AD45E6039F224 /* TeamsMeetingWindowClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsMeetingWindowClassifier.swift; sourceTree = "<group>"; };
 		76E29FAACB1C955903DBB56D /* TeamsAutoRecorder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeamsAutoRecorder.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A31F2F6597B9A816A563AC1 /* WhisperModelManaging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperModelManaging.swift; sourceTree = "<group>"; };
 		860278D30896B2227C270FBE /* TranscriptionWorker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionWorker.swift; sourceTree = "<group>"; };
@@ -122,9 +126,11 @@
 		546317F2239C13D7537E1256 /* Detector */ = {
 			isa = PBXGroup;
 			children = (
+				635EBD87448D7E49DC719226 /* AudioSignalProviderFactory.swift */,
 				5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */,
 				02E31ABD63F8FD47C26B1705 /* MeetingDetector.swift */,
 				580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */,
+				74F9969BB62AD45E6039F224 /* TeamsMeetingWindowClassifier.swift */,
 				A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */,
 			);
 			path = Detector;
@@ -278,6 +284,7 @@
 				849F5F56F1F6B36993F0C071 /* AudioMixer.swift in Sources */,
 				BD3539E4A74B6324E7F913FA /* AudioNormalizer.swift in Sources */,
 				8499255F1C5DE36CC86CF814 /* AudioNormalizing.swift in Sources */,
+				233318A46E99CCF086632FE9 /* AudioSignalProviderFactory.swift in Sources */,
 				FD143A6B8DBDB62D27EDF5A7 /* CaptureEngine.swift in Sources */,
 				8E01932D775BEFAA929FF882 /* DashboardViewModel.swift in Sources */,
 				92F3D5B1E81962E28F5250E3 /* Database.swift in Sources */,
@@ -292,6 +299,7 @@
 				8931CD46AEFA85258DFB7657 /* PermissionCoordinator.swift in Sources */,
 				5024222E23FF0516CC0207C1 /* SessionRepository.swift in Sources */,
 				998F1DCB9466C040DF0205A7 /* TeamsAudioSignalProvider.swift in Sources */,
+				D621AEA98CBC019063184490 /* TeamsMeetingWindowClassifier.swift in Sources */,
 				0718D3538FD3351B7FCE573A /* TeamsWindowSignalProvider.swift in Sources */,
 				93AC5D21521FB3805C869F9A /* TranscriptionWorker.swift in Sources */,
 				F024C025090C661851254440 /* WhisperKitTranscriber.swift in Sources */,

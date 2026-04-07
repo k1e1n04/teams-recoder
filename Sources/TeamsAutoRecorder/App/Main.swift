@@ -196,6 +196,9 @@ private final class RuntimeController: ObservableObject {
             let windowProvider = TeamsWindowSignalProvider { _ in
                 self.hasVisibleTeamsWindow()
             }
+            let windowFallbackProvider = TeamsAudioSignalProvider { date in
+                windowProvider.isMeetingWindowActive(at: date)
+            }
             let audioProvider: TeamsAudioSignalProviding
             do {
                 let monitor = try MicrophoneLevelMonitor()
@@ -203,18 +206,16 @@ private final class RuntimeController: ObservableObject {
                 let micProvider = TeamsAudioSignalProvider { date in
                     monitor.isActive(at: date)
                 }
-                let windowFallbackProvider = TeamsAudioSignalProvider { date in
-                    windowProvider.isMeetingWindowActive(at: date)
-                }
-                audioProvider = FallbackAudioSignalProvider(
-                    primary: micProvider,
-                    fallback: windowFallbackProvider
+                audioProvider = AudioSignalProviderFactory.make(
+                    microphoneProvider: micProvider,
+                    windowFallbackProvider: windowFallbackProvider
                 )
             } catch {
-                // Fallback to conservative behavior if mic metering setup fails.
-                audioProvider = TeamsAudioSignalProvider { date in
-                    windowProvider.isMeetingWindowActive(at: date)
-                }
+                // If mic metering setup fails, fall back to Teams window activity.
+                audioProvider = AudioSignalProviderFactory.make(
+                    microphoneProvider: nil,
+                    windowFallbackProvider: windowFallbackProvider
+                )
             }
 
             runtime = RecorderRuntime(
@@ -251,7 +252,7 @@ private final class RuntimeController: ObservableObject {
 
         guard let windowInfo = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
                 as? [[String: Any]] else {
-            return runningApps.contains(where: { !$0.isHidden })
+            return false
         }
 
         for info in windowInfo {
@@ -275,11 +276,15 @@ private final class RuntimeController: ObservableObject {
                 continue
             }
 
+            let title = (info[kCGWindowName as String] as? String) ?? ""
+            guard TeamsMeetingWindowClassifier.isMeetingWindowTitle(title) else {
+                continue
+            }
+
             return true
         }
 
-        // Fallback for environments where window enumeration is limited.
-        return runningApps.contains(where: { !$0.isHidden })
+        return false
     }
 
     private func consume(_ event: MeetingDetectorEvent) {
