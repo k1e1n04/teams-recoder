@@ -888,10 +888,10 @@ private struct SessionDetailView: View {
                         HStack {
                             SectionLabel(title: "要約")
                             Spacer()
-                            if summaryText != nil {
+                            if let summary = summaryText {
                                 Button {
                                     NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString(summaryText!, forType: .string)
+                                    NSPasteboard.general.setString(summary, forType: .string)
                                 } label: {
                                     HStack(spacing: 4) {
                                         Image(systemName: "doc.on.doc")
@@ -930,6 +930,7 @@ private struct SessionDetailView: View {
                                     .foregroundStyle(Color.inkDim)
                                     .padding(.vertical, 12)
                             }
+                            .frame(maxWidth: .infinity)
                         }
                     }
                     .padding(.horizontal, 28)
