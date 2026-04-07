@@ -48,6 +48,9 @@ public final class Database {
             PRIMARY KEY (session_id, segment_index)
         );
         """)
+
+        // Migration: add name column if it doesn't exist yet
+        try? execute(sql: "ALTER TABLE sessions ADD COLUMN name TEXT;")
     }
 
     public func execute(sql: String) throws {

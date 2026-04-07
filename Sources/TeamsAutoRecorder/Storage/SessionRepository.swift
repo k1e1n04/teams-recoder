@@ -9,12 +9,14 @@ public struct SessionRecord: Codable, Equatable, Identifiable {
     public let startedAt: Double
     public let endedAt: Double
     public let transcriptText: String
+    public var name: String?
 
-    public init(sessionID: String, startedAt: Double, endedAt: Double, transcriptText: String) {
+    public init(sessionID: String, startedAt: Double, endedAt: Double, transcriptText: String, name: String? = nil) {
         self.sessionID = sessionID
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.transcriptText = transcriptText
+        self.name = name
     }
 }
 
@@ -34,8 +36,8 @@ public final class SessionRepository {
 
     public func saveSession(_ record: SessionRecord) throws {
         let sql = """
-        INSERT INTO sessions (session_id, started_at, ended_at, transcript_text)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO sessions (session_id, started_at, ended_at, transcript_text, name)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(session_id) DO UPDATE SET
             started_at=excluded.started_at,
             ended_at=excluded.ended_at,
@@ -49,6 +51,7 @@ public final class SessionRepository {
         sqlite3_bind_double(stmt, 2, record.startedAt)
         sqlite3_bind_double(stmt, 3, record.endedAt)
         bindText(record.transcriptText, to: stmt, index: 4)
+        bindOptionalText(record.name, to: stmt, index: 5)
 
         guard sqlite3_step(stmt) == SQLITE_DONE else {
             throw DatabaseError.executionFailed(message: String(cString: sqlite3_errmsg(database.rawHandle)))
@@ -60,7 +63,7 @@ public final class SessionRepository {
 
     public func fetchSession(sessionID: String) throws -> SessionRecord? {
         let sql = """
-        SELECT session_id, started_at, ended_at, transcript_text
+        SELECT session_id, started_at, ended_at, transcript_text, name
         FROM sessions WHERE session_id = ? LIMIT 1;
         """
 
@@ -72,16 +75,12 @@ public final class SessionRepository {
             return nil
         }
 
-        let id = String(cString: sqlite3_column_text(stmt, 0))
-        let startedAt = sqlite3_column_double(stmt, 1)
-        let endedAt = sqlite3_column_double(stmt, 2)
-        let text = String(cString: sqlite3_column_text(stmt, 3))
-        return SessionRecord(sessionID: id, startedAt: startedAt, endedAt: endedAt, transcriptText: text)
+        return rowToRecord(stmt)
     }
 
     public func fetchRecentSessions(limit: Int) throws -> [SessionRecord] {
         let sql = """
-        SELECT session_id, started_at, ended_at, transcript_text
+        SELECT session_id, started_at, ended_at, transcript_text, name
         FROM sessions
         ORDER BY started_at DESC
         LIMIT ?;
@@ -93,13 +92,20 @@ public final class SessionRepository {
 
         var result: [SessionRecord] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
-            let id = String(cString: sqlite3_column_text(stmt, 0))
-            let startedAt = sqlite3_column_double(stmt, 1)
-            let endedAt = sqlite3_column_double(stmt, 2)
-            let text = String(cString: sqlite3_column_text(stmt, 3))
-            result.append(.init(sessionID: id, startedAt: startedAt, endedAt: endedAt, transcriptText: text))
+            result.append(rowToRecord(stmt))
         }
         return result
+    }
+
+    private func rowToRecord(_ stmt: OpaquePointer) -> SessionRecord {
+        let id = String(cString: sqlite3_column_text(stmt, 0))
+        let startedAt = sqlite3_column_double(stmt, 1)
+        let endedAt = sqlite3_column_double(stmt, 2)
+        let text = String(cString: sqlite3_column_text(stmt, 3))
+        let name: String? = sqlite3_column_type(stmt, 4) != SQLITE_NULL
+            ? String(cString: sqlite3_column_text(stmt, 4))
+            : nil
+        return SessionRecord(sessionID: id, startedAt: startedAt, endedAt: endedAt, transcriptText: text, name: name)
     }
 
     public func exportTranscript(sessionID: String, outputDirectory: URL) throws -> TranscriptExportURLs {
@@ -160,6 +166,14 @@ public final class SessionRepository {
             sqlite3_bind_text(statement, index, ptr, -1, sqliteTransient)
         }
     }
+
+    private func bindOptionalText(_ value: String?, to statement: OpaquePointer?, index: Int32) {
+        if let value {
+            bindText(value, to: statement, index: index)
+        } else {
+            sqlite3_bind_null(statement, index)
+        }
+    }
 }
 
 public protocol SessionListing {
@@ -170,7 +184,24 @@ public protocol SessionDeleting {
     func deleteSession(sessionID: String) throws
 }
 
+public protocol SessionRenaming {
+    func renameSession(sessionID: String, name: String?) throws
+}
+
 extension SessionRepository: SessionListing {}
+extension SessionRepository: SessionRenaming {
+    public func renameSession(sessionID: String, name: String?) throws {
+        let sql = "UPDATE sessions SET name = ? WHERE session_id = ?;"
+        let stmt = try database.prepare(sql)
+        defer { database.finalize(stmt) }
+        bindOptionalText(name, to: stmt, index: 1)
+        bindText(sessionID, to: stmt, index: 2)
+        guard sqlite3_step(stmt) == SQLITE_DONE else {
+            throw DatabaseError.executionFailed(message: String(cString: sqlite3_errmsg(database.rawHandle)))
+        }
+    }
+}
+
 extension SessionRepository: SessionDeleting {
     public func deleteSession(sessionID: String) throws {
         for sql in [

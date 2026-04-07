@@ -21,6 +21,53 @@ final class SessionRepositoryTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: urls.json.path))
     }
 
+    func testRenameSessionPersistsName() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+
+        let record = SessionRecord(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
+        try repo.saveSession(record)
+        try repo.renameSession(sessionID: "s1", name: "週次定例")
+
+        let fetched = try repo.fetchSession(sessionID: "s1")
+        XCTAssertEqual(fetched?.name, "週次定例")
+    }
+
+    func testRenameSessionWithNilClearsName() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+
+        let record = SessionRecord(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")
+        try repo.saveSession(record)
+        try repo.renameSession(sessionID: "s1", name: "一時名")
+        try repo.renameSession(sessionID: "s1", name: nil)
+
+        let fetched = try repo.fetchSession(sessionID: "s1")
+        XCTAssertNil(fetched?.name)
+    }
+
+    func testFetchSessionWithoutNameReturnsNilName() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let db = try Database(path: dir.appendingPathComponent("app.sqlite").path)
+        try db.migrate()
+        let repo = SessionRepository(database: db, fileManager: .default)
+
+        try repo.saveSession(.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hi"))
+
+        let fetched = try repo.fetchSession(sessionID: "s1")
+        XCTAssertNil(fetched?.name)
+    }
+
     func testFetchRecentSessionsReturnsStartedAtDescending() throws {
         let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

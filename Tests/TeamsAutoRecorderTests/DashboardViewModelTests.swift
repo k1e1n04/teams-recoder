@@ -19,6 +19,39 @@ final class DashboardViewModelTests: XCTestCase {
         XCTAssertNil(vm.errorMessage)
     }
 
+    func testRenameSessionUpdatesNameInViewModel() {
+        let provider = SessionProviderStub(
+            sessions: [.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")]
+        )
+        let renamer = SessionRenamerStub()
+        let launch = LaunchAtLoginManagerStub()
+        let vm = DashboardViewModel(sessionProvider: provider, sessionRenamer: renamer, launchAtLoginManager: launch)
+        vm.loadSessions()
+
+        vm.renameSession(sessionID: "s1", name: "週次定例")
+
+        XCTAssertEqual(vm.sessions.first?.name, "週次定例")
+        XCTAssertEqual(renamer.calls.count, 1)
+        XCTAssertEqual(renamer.calls.first?.0, "s1")
+        XCTAssertEqual(renamer.calls.first?.1, "週次定例")
+        XCTAssertNil(vm.errorMessage)
+    }
+
+    func testRenameSessionFailureSetsErrorMessage() {
+        let provider = SessionProviderStub(
+            sessions: [.init(sessionID: "s1", startedAt: 1, endedAt: 2, transcriptText: "hello")]
+        )
+        let renamer = SessionRenamerStub(renameError: StubError.forced)
+        let launch = LaunchAtLoginManagerStub()
+        let vm = DashboardViewModel(sessionProvider: provider, sessionRenamer: renamer, launchAtLoginManager: launch)
+        vm.loadSessions()
+
+        vm.renameSession(sessionID: "s1", name: "失敗")
+
+        XCTAssertNotNil(vm.errorMessage)
+        XCTAssertNil(vm.sessions.first?.name)
+    }
+
     func testSetLaunchAtLoginUpdatesManagerAndState() {
         let provider = SessionProviderStub(sessions: [])
         let launch = LaunchAtLoginManagerStub()
@@ -39,6 +72,20 @@ final class DashboardViewModelTests: XCTestCase {
 
         XCTAssertNotNil(vm.errorMessage)
         XCTAssertFalse(vm.launchAtLoginEnabled)
+    }
+}
+
+private final class SessionRenamerStub: SessionRenaming {
+    private(set) var calls: [(String, String?)] = []
+    private let renameError: Error?
+
+    init(renameError: Error? = nil) {
+        self.renameError = renameError
+    }
+
+    func renameSession(sessionID: String, name: String?) throws {
+        if let renameError { throw renameError }
+        calls.append((sessionID, name))
     }
 }
 

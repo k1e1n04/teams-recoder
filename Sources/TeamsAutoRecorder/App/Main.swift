@@ -370,6 +370,7 @@ private struct SectionLabel: View {
 private struct SessionsPanel: View {
     @ObservedObject var viewModel: DashboardViewModel
     @State private var selectedSession: SessionRecord?
+    @State private var renamingSessionID: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -382,8 +383,20 @@ private struct SessionsPanel: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.sessions, id: \.sessionID) { session in
-                            SessionRowView(session: session)
-                                .onTapGesture { selectedSession = session }
+                            if renamingSessionID == session.sessionID {
+                                InlineRenameRow(
+                                    session: session,
+                                    onCommit: { newName in
+                                        viewModel.renameSession(sessionID: session.sessionID, name: newName.isEmpty ? nil : newName)
+                                        renamingSessionID = nil
+                                    },
+                                    onCancel: { renamingSessionID = nil }
+                                )
+                            } else {
+                                SessionRowView(session: session)
+                                    .onTapGesture(count: 2) { renamingSessionID = session.sessionID }
+                                    .onTapGesture(count: 1) { selectedSession = session }
+                            }
                             Rectangle()
                                 .fill(Color.obsidianBorder.opacity(0.6))
                                 .frame(height: 1)
@@ -396,10 +409,19 @@ private struct SessionsPanel: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.obsidianBase)
         .sheet(item: $selectedSession) { session in
-            SessionDetailView(session: session) {
-                viewModel.deleteSession(sessionID: session.sessionID)
-                selectedSession = nil
-            }
+            SessionDetailView(
+                session: session,
+                onRename: { newName in
+                    viewModel.renameSession(sessionID: session.sessionID, name: newName.isEmpty ? nil : newName)
+                    if let idx = viewModel.sessions.firstIndex(where: { $0.sessionID == session.sessionID }) {
+                        selectedSession = viewModel.sessions[idx]
+                    }
+                },
+                onDelete: {
+                    viewModel.deleteSession(sessionID: session.sessionID)
+                    selectedSession = nil
+                }
+            )
         }
     }
 }
@@ -461,6 +483,62 @@ private struct EmptySessionsView: View {
     }
 }
 
+// MARK: - Inline Rename Row
+
+private struct InlineRenameRow: View {
+    let session: SessionRecord
+    let onCommit: (String) -> Void
+    let onCancel: () -> Void
+
+    @State private var text: String
+    @FocusState private var focused: Bool
+
+    init(session: SessionRecord, onCommit: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+        self.session = session
+        self.onCommit = onCommit
+        self.onCancel = onCancel
+        _text = State(initialValue: session.name ?? "")
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 0) {
+            Rectangle()
+                .fill(Color.amber.opacity(0.9))
+                .frame(width: 2.5)
+                .padding(.vertical, 14)
+                .padding(.leading, 28)
+
+            VStack(alignment: .leading, spacing: 4) {
+                TextField("名前を入力…", text: $text)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.inkPrimary)
+                    .textFieldStyle(.plain)
+                    .focused($focused)
+                    .onSubmit { onCommit(text) }
+                    .onExitCommand { onCancel() }
+                Text(session.sessionID)
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundStyle(Color.inkDim)
+                HStack(spacing: 8) {
+                    Button("確定") { onCommit(text) }
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.amber)
+                        .buttonStyle(.plain)
+                    Button("キャンセル") { onCancel() }
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.inkMuted)
+                        .buttonStyle(.plain)
+                }
+            }
+            .padding(.leading, 14)
+            .padding(.trailing, 28)
+            .padding(.vertical, 14)
+        }
+        .background(Color.obsidianHover)
+        .onAppear { focused = true }
+    }
+}
+
 // MARK: - Session Row
 
 private struct SessionRowView: View {
@@ -493,9 +571,20 @@ private struct SessionRowView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .center, spacing: 0) {
-                    Text(session.sessionID)
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(Color.amber)
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let name = session.name {
+                            Text(name)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.inkPrimary)
+                            Text(session.sessionID)
+                                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                .foregroundStyle(Color.inkDim)
+                        } else {
+                            Text(session.sessionID)
+                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(Color.amber)
+                        }
+                    }
                     Spacer()
                     HStack(spacing: 6) {
                         Image(systemName: isFailed ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
@@ -549,12 +638,16 @@ private struct SessionRowView: View {
 
 private struct SessionDetailView: View {
     let session: SessionRecord
+    let onRename: ((String) -> Void)?
     let onDelete: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
+    @State private var isRenaming = false
+    @State private var renameText = ""
 
-    init(session: SessionRecord, onDelete: (() -> Void)? = nil) {
+    init(session: SessionRecord, onRename: ((String) -> Void)? = nil, onDelete: (() -> Void)? = nil) {
         self.session = session
+        self.onRename = onRename
         self.onDelete = onDelete
     }
 
@@ -592,9 +685,35 @@ private struct SessionDetailView: View {
             // Header
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(session.sessionID)
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color.amber)
+                    if isRenaming {
+                        HStack(spacing: 8) {
+                            TextField("名前を入力…", text: $renameText)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(Color.inkPrimary)
+                                .textFieldStyle(.plain)
+                                .onSubmit { commitRename() }
+                                .onExitCommand { isRenaming = false }
+                            Button("確定") { commitRename() }
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.amber)
+                                .buttonStyle(.plain)
+                            Button("キャンセル") { isRenaming = false }
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.inkMuted)
+                                .buttonStyle(.plain)
+                        }
+                    } else if let name = session.name {
+                        Text(name)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(Color.inkPrimary)
+                        Text(session.sessionID)
+                            .font(.system(size: 11, weight: .regular, design: .monospaced))
+                            .foregroundStyle(Color.inkDim)
+                    } else {
+                        Text(session.sessionID)
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.amber)
+                    }
                     Text(dateTimeLabel)
                         .font(.system(size: 12))
                         .foregroundStyle(Color.inkMuted)
@@ -609,6 +728,15 @@ private struct SessionDetailView: View {
                 }
                 Spacer()
                 HStack(spacing: 12) {
+                    if onRename != nil && !isRenaming {
+                        Button(action: { startRenaming() }) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.inkSecondary.opacity(0.8))
+                        }
+                        .buttonStyle(.plain)
+                        .help("名前を変更")
+                    }
                     if onDelete != nil {
                         Button(action: { showDeleteConfirmation = true }) {
                             Image(systemName: "trash")
@@ -659,6 +787,16 @@ private struct SessionDetailView: View {
             Text("この操作は元に戻せません。")
         }
     }
+
+    private func startRenaming() {
+        renameText = session.name ?? ""
+        isRenaming = true
+    }
+
+    private func commitRename() {
+        onRename?(renameText)
+        isRenaming = false
+    }
 }
 
 // MARK: - Factory & Fallbacks
@@ -675,6 +813,7 @@ private enum DashboardFactory {
             return DashboardViewModel(
                 sessionProvider: repository,
                 sessionDeleter: repository,
+                sessionRenamer: repository,
                 launchAtLoginManager: SystemLaunchAtLoginManager()
             )
         } catch {
