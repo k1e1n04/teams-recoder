@@ -255,6 +255,7 @@ private final class RuntimeController: ObservableObject {
             return false
         }
 
+        var titles: [String] = []
         for info in windowInfo {
             guard
                 let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t,
@@ -277,14 +278,10 @@ private final class RuntimeController: ObservableObject {
             }
 
             let title = (info[kCGWindowName as String] as? String) ?? ""
-            guard TeamsMeetingWindowClassifier.isMeetingWindowTitle(title) else {
-                continue
-            }
-
-            return true
+            titles.append(title)
         }
 
-        return false
+        return TeamsMeetingWindowClassifier.allKeywordsExist(in: titles)
     }
 
     private func consume(_ event: MeetingDetectorEvent) {

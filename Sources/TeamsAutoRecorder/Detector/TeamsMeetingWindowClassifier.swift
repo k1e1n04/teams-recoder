@@ -1,19 +1,22 @@
 import Foundation
 
 public enum TeamsMeetingWindowClassifier {
-    private static let requiredKeywords: [String] = [
+    static let requiredKeywords: [String] = [
         "退出",
         "共有",
         "マイク",
         "カメラ"
     ]
 
-    public static func isMeetingWindowTitle(_ title: String) -> Bool {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-
-        return requiredKeywords.allSatisfy { keyword in
-            trimmed.contains(keyword)
+    public static func allKeywordsExist(in titles: [String]) -> Bool {
+        var found = Set<String>()
+        for raw in titles {
+            let title = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !title.isEmpty else { continue }
+            for keyword in requiredKeywords where title.contains(keyword) {
+                found.insert(keyword)
+            }
         }
+        return requiredKeywords.allSatisfy(found.contains)
     }
 }

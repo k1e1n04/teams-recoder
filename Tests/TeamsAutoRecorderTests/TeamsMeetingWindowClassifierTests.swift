@@ -2,23 +2,23 @@ import XCTest
 @testable import TeamsAutoRecorder
 
 final class TeamsMeetingWindowClassifierTests: XCTestCase {
-    func testReturnsTrueOnlyWhenAllRequiredKeywordsExist() {
+    func testReturnsTrueWhenAllRequiredKeywordsExistAcrossTitles() {
         XCTAssertTrue(
-            TeamsMeetingWindowClassifier.isMeetingWindowTitle("退出 共有 マイク カメラ")
+            TeamsMeetingWindowClassifier.allKeywordsExist(in: ["退出", "共有", "マイク", "カメラ"])
         )
     }
 
     func testReturnsFalseWhenAnyRequiredKeywordIsMissing() {
-        XCTAssertFalse(TeamsMeetingWindowClassifier.isMeetingWindowTitle("退出 共有 マイク"))
-        XCTAssertFalse(TeamsMeetingWindowClassifier.isMeetingWindowTitle("退出 共有 カメラ"))
-        XCTAssertFalse(TeamsMeetingWindowClassifier.isMeetingWindowTitle("退出 マイク カメラ"))
-        XCTAssertFalse(TeamsMeetingWindowClassifier.isMeetingWindowTitle("共有 マイク カメラ"))
+        XCTAssertFalse(TeamsMeetingWindowClassifier.allKeywordsExist(in: ["退出", "共有", "マイク"]))
+        XCTAssertFalse(TeamsMeetingWindowClassifier.allKeywordsExist(in: ["退出", "共有", "カメラ"]))
+        XCTAssertFalse(TeamsMeetingWindowClassifier.allKeywordsExist(in: ["退出", "マイク", "カメラ"]))
+        XCTAssertFalse(TeamsMeetingWindowClassifier.allKeywordsExist(in: ["共有", "マイク", "カメラ"]))
     }
 
     func testReturnsFalseForNormalTeamsWindowTitles() {
-        XCTAssertFalse(TeamsMeetingWindowClassifier.isMeetingWindowTitle("Chat | Microsoft Teams"))
-        XCTAssertFalse(TeamsMeetingWindowClassifier.isMeetingWindowTitle("Calendar | Microsoft Teams"))
-        XCTAssertFalse(TeamsMeetingWindowClassifier.isMeetingWindowTitle("Microsoft Teams"))
-        XCTAssertFalse(TeamsMeetingWindowClassifier.isMeetingWindowTitle(""))
+        XCTAssertFalse(TeamsMeetingWindowClassifier.allKeywordsExist(in: ["Chat | Microsoft Teams"]))
+        XCTAssertFalse(TeamsMeetingWindowClassifier.allKeywordsExist(in: ["Calendar | Microsoft Teams"]))
+        XCTAssertFalse(TeamsMeetingWindowClassifier.allKeywordsExist(in: ["Microsoft Teams"]))
+        XCTAssertFalse(TeamsMeetingWindowClassifier.allKeywordsExist(in: [""]))
     }
 }
