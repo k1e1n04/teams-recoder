@@ -2,17 +2,22 @@ import XCTest
 @testable import TeamsAutoRecorder
 
 final class SlackHuddleWindowClassifierTests: XCTestCase {
-    func testReturnsTrueWhenRequiredKeywordExists() {
-        XCTAssertTrue(SlackHuddleWindowClassifier.allKeywordsExist(in: ["退出する"]))
+    func testReturnsTrueWhenRequiredKeywordsExist() {
+        XCTAssertTrue(SlackHuddleWindowClassifier.allKeywordsExist(in: ["ハドル", "退出する"]))
     }
 
-    func testReturnsTrueWhenKeywordExistsAmongMultipleTitles() {
-        XCTAssertTrue(SlackHuddleWindowClassifier.allKeywordsExist(in: ["Slack", "退出する", "マイク"]))
+    func testReturnsTrueWhenKeywordsExistAmongMultipleTitles() {
+        XCTAssertTrue(SlackHuddleWindowClassifier.allKeywordsExist(in: ["Slack", "ハドル", "退出する", "マイク"]))
     }
 
-    func testReturnsFalseWhenKeywordIsMissing() {
+    func testReturnsFalseWhenHuddleKeywordIsMissing() {
+        XCTAssertFalse(SlackHuddleWindowClassifier.allKeywordsExist(in: ["退出する"]))
+        XCTAssertFalse(SlackHuddleWindowClassifier.allKeywordsExist(in: ["退出する", "Slack"]))
+    }
+
+    func testReturnsFalseWhenLeaveKeywordIsMissing() {
+        XCTAssertFalse(SlackHuddleWindowClassifier.allKeywordsExist(in: ["ハドル"]))
         XCTAssertFalse(SlackHuddleWindowClassifier.allKeywordsExist(in: ["退出"]))
-        XCTAssertFalse(SlackHuddleWindowClassifier.allKeywordsExist(in: ["する"]))
         XCTAssertFalse(SlackHuddleWindowClassifier.allKeywordsExist(in: []))
     }
 

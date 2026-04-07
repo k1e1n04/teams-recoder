@@ -1,7 +1,7 @@
 import Foundation
 
 public enum SlackHuddleWindowClassifier {
-    static let requiredKeywords: [String] = ["退出する"]
+    static let requiredKeywords: [String] = ["ハドル", "退出する"]
 
     public static func allKeywordsExist(in titles: [String]) -> Bool {
         var found = Set<String>()
