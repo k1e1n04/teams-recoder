@@ -8,8 +8,12 @@ public final class DefaultWhisperInferencer: WhisperInferencing {
         let whisper = try await WhisperKit(modelFolder: modelPath.path)
         let result = try await whisper.transcribe(audioArray: samples)
         return result.flatMap { item in
-            item.segments.map { segment in
-                TranscriptSegment(start: Double(segment.start), end: Double(segment.end), text: segment.text)
+            item.segments.compactMap { segment in
+                let cleaned = segment.text
+                    .replacingOccurrences(of: "<\\|[^|]+\\|>", with: "", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !cleaned.isEmpty else { return nil }
+                return TranscriptSegment(start: Double(segment.start), end: Double(segment.end), text: cleaned)
             }
         }
     }

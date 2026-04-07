@@ -3,7 +3,8 @@ import SQLite3
 
 private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-public struct SessionRecord: Codable, Equatable {
+public struct SessionRecord: Codable, Equatable, Identifiable {
+    public var id: String { sessionID }
     public let sessionID: String
     public let startedAt: Double
     public let endedAt: Double

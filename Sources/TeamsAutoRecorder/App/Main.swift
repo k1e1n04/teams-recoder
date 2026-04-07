@@ -369,6 +369,7 @@ private struct SectionLabel: View {
 
 private struct SessionsPanel: View {
     @ObservedObject var viewModel: DashboardViewModel
+    @State private var selectedSession: SessionRecord?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -382,6 +383,7 @@ private struct SessionsPanel: View {
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.sessions, id: \.sessionID) { session in
                             SessionRowView(session: session)
+                                .onTapGesture { selectedSession = session }
                             Rectangle()
                                 .fill(Color.obsidianBorder.opacity(0.6))
                                 .frame(height: 1)
@@ -393,6 +395,9 @@ private struct SessionsPanel: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.obsidianBase)
+        .sheet(item: $selectedSession) { session in
+            SessionDetailView(session: session)
+        }
     }
 }
 
@@ -534,6 +539,92 @@ private struct SessionRowView: View {
         let secs = Int(max(0, session.endedAt - session.startedAt))
         guard secs > 0 else { return "—" }
         return secs < 60 ? "\(secs)s" : "\(secs / 60)m \(secs % 60)s"
+    }
+}
+
+// MARK: - Session Detail
+
+private struct SessionDetailView: View {
+    let session: SessionRecord
+    @Environment(\.dismiss) private var dismiss
+
+    private var isFailed: Bool {
+        session.transcriptText.hasPrefix("[transcription failed]")
+    }
+
+    private var fullText: String {
+        if isFailed {
+            let raw = session.transcriptText
+                .replacingOccurrences(of: "[transcription failed] ", with: "")
+            return TranscriptionFailureMessageFormatter.userVisibleMessage(from: raw)
+        }
+        return session.transcriptText.isEmpty ? "（文字起こしなし）" : session.transcriptText
+    }
+
+    private var dateTimeLabel: String {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        f.locale = Locale(identifier: "ja_JP")
+        let start = Date(timeIntervalSince1970: session.startedAt)
+        let end = Date(timeIntervalSince1970: session.endedAt)
+        return "\(f.string(from: start))  →  \(f.string(from: end))"
+    }
+
+    private var durationLabel: String {
+        let secs = Int(max(0, session.endedAt - session.startedAt))
+        guard secs > 0 else { return "—" }
+        return secs < 60 ? "\(secs)秒" : "\(secs / 60)分 \(secs % 60)秒"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(session.sessionID)
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.amber)
+                    Text(dateTimeLabel)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.inkMuted)
+                    HStack(spacing: 6) {
+                        Image(systemName: isFailed ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(isFailed ? Color.recRed : Color.okGreen)
+                        Text(isFailed ? "文字起こし失敗" : "完了 · \(durationLabel)")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(isFailed ? Color.recRed : Color.inkMuted)
+                    }
+                }
+                Spacer()
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.inkDim)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 26)
+            .padding(.bottom, 18)
+
+            Divider().background(Color.obsidianBorder)
+
+            // Transcript body
+            ScrollView {
+                Text(fullText)
+                    .font(.system(size: 13.5))
+                    .foregroundStyle(isFailed ? Color.recRed.opacity(0.85) : Color.inkSecondary)
+                    .lineSpacing(5)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(28)
+            }
+        }
+        .frame(minWidth: 560, minHeight: 400)
+        .background(Color.obsidianBase)
+        .preferredColorScheme(.dark)
     }
 }
 
