@@ -210,9 +210,9 @@ private final class RuntimeController: ObservableObject {
             try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
 
             let orchestrator = try AppBootstrap().makeDefaultOrchestrator(storageDirectory: base)
-            let windowProvider = TeamsWindowSignalProvider { _ in
+            let windowProvider = TeamsWindowSignalProvider(holdSeconds: 8, evaluator: { _ in
                 self.hasVisibleTeamsWindow()
-            }
+            })
             let windowFallbackProvider = TeamsAudioSignalProvider { date in
                 windowProvider.isMeetingWindowActive(at: date)
             }

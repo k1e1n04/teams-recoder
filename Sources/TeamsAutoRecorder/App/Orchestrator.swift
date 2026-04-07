@@ -90,8 +90,16 @@ public final class RecorderOrchestrator {
             )
             try? repository.saveSession(record)
             _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
-        case .failure:
-            appStateMachine.reset()
+        case let .failure(failure):
+            let startedAt = currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970
+            let record = SessionRecord(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                endedAt: now.timeIntervalSince1970,
+                transcriptText: "[transcription failed] \(failure.description)"
+            )
+            try? repository.saveSession(record)
+            _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
         }
     }
 }
