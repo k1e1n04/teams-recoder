@@ -1138,13 +1138,34 @@ private final class RuntimeController: ObservableObject {
                 audioSignalProvider: audioProvider
             )
 
+            let queue = orchestrator.transcriptionQueue
+            Task {
+                await queue.setOnQueueChanged { [weak self] count in
+                    guard let self else { return }
+                    if count == 0 {
+                        if !self.isManuallyRecording {
+                            self.statusText = "待機中"
+                        }
+                    } else {
+                        self.statusText = "文字起こし中 (残 \(count) 件)"
+                    }
+                }
+                await queue.setOnJobCompleted { [weak self] sessionID, success in
+                    guard let self else { return }
+                    if success {
+                        self.lastResultText = "保存完了 (\(sessionID))"
+                    } else {
+                        self.lastResultText = "文字起こし失敗 (\(sessionID))"
+                    }
+                    self.onSessionSaved?()
+                }
+            }
+
             loopTask = Task { [weak self] in
                 while !Task.isCancelled {
                     guard let self else { return }
                     if !self.isManuallyRecording {
-                        if let event = await self.runtime?.runIteration(onTranscriptionStarted: {
-                            self.statusText = "文字起こし中"
-                        }) {
+                        if let event = await self.runtime?.runIteration() {
                             self.consume(event)
                         }
                     }
@@ -1218,16 +1239,13 @@ private final class RuntimeController: ObservableObject {
         case let .started(sessionID):
             statusText = "録音中"
             notificationSink?.sendSilent(message: "Teams 会議を検知して録音を開始しました (\(sessionID))")
-        case let .stopped(sessionID):
-            statusText = "待機中"
-            lastResultText = "保存完了 (\(sessionID))"
-            onSessionSaved?()
+        case .stopped:
+            break // statusText は onQueueChanged、lastResultText と onSessionSaved は onJobCompleted が担当
         case let .transcriptionFailed(sessionID, reason):
             statusText = "待機中"
             let userVisibleReason = TranscriptionFailureMessageFormatter.userVisibleMessage(from: reason)
             lastResultText = "文字起こし失敗 (\(sessionID)): \(userVisibleReason)"
             notificationSink?.sendSilent(message: "文字起こし失敗: \(sessionID) \(reason)")
-            onSessionSaved?()
         case .fallbackToNotifyOnly:
             statusText = "通知のみ"
         }
@@ -1236,7 +1254,6 @@ private final class RuntimeController: ObservableObject {
     func toggleManualRecording() {
         if isManuallyRecording {
             isManuallyRecording = false
-            statusText = "文字起こし中"
             Task { @MainActor in
                 if let event = await self.runtime?.stopManualRecording() {
                     self.consume(event)
