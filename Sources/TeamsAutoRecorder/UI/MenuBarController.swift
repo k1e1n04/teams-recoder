@@ -87,10 +87,6 @@ public final class MenuBarController {
         case .recording:
             statusText = "録音中"
             notificationSink.sendSilent(message: "Teams 会議を検知して録音を開始しました")
-        case .transcribing:
-            statusText = "文字起こし中"
-        case .completed:
-            statusText = "完了"
         }
     }
 }

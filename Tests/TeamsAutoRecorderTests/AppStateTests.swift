@@ -9,10 +9,15 @@ final class AppStateTests: XCTestCase {
         XCTAssertTrue(machine.startRecording(sessionID: "s1", startedAt: Date(timeIntervalSince1970: 0)))
         XCTAssertEqual(machine.state, .recording(sessionID: "s1"))
 
-        XCTAssertTrue(machine.startTranscription())
-        XCTAssertEqual(machine.state, .transcribing(sessionID: "s1"))
+        machine.reset()
+        XCTAssertEqual(machine.state, .idle)
+        XCTAssertNil(machine.recordingStartedAt)
+    }
 
-        XCTAssertTrue(machine.finish(transcriptPath: "/tmp/s1.txt"))
-        XCTAssertEqual(machine.state, .completed(sessionID: "s1", transcriptPath: "/tmp/s1.txt"))
+    func testStartRecordingFailsWhenAlreadyRecording() {
+        var machine = AppStateMachine()
+        XCTAssertTrue(machine.startRecording(sessionID: "s1", startedAt: Date(timeIntervalSince1970: 0)))
+        XCTAssertFalse(machine.startRecording(sessionID: "s2", startedAt: Date(timeIntervalSince1970: 1)))
+        XCTAssertEqual(machine.state, .recording(sessionID: "s1"))
     }
 }

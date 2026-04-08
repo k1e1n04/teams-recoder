@@ -1,6 +1,6 @@
 import Foundation
 
-public final class SessionAudioArtifactStore {
+public final class SessionAudioArtifactStore: @unchecked Sendable {
     private let directory: URL
     private let fileManager: FileManager
     private let nowProvider: () -> Date

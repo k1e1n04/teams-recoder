@@ -66,17 +66,17 @@ final class E2ESmokeTests: XCTestCase {
         let stopEvent = await orchestrator.tick(windowActive: false, audioActive: false, now: start.addingTimeInterval(2))
 
         switch stopEvent {
-        case let .transcriptionFailed(sessionID, _):
+        case let .stopped(sessionID):
             XCTAssertEqual(sessionID, "session-0")
         default:
-            XCTFail("expected transcriptionFailed event")
+            XCTFail("expected stopped event, got \(String(describing: stopEvent))")
         }
 
         try await Task.sleep(nanoseconds: 200_000_000)
 
         let saved = try orchestrator.repository.fetchSession(sessionID: "session-0")
-        XCTAssertEqual(saved?.sessionID, "session-0")
         XCTAssertNotNil(saved)
+        XCTAssertTrue(saved?.transcriptText.contains("[transcription failed]") == true)
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("session-0-mixed.wav").path))
     }
 

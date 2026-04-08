@@ -36,7 +36,7 @@ public enum TranscriptionResult: Equatable {
     case failure(TranscriptionFailure)
 }
 
-public struct TranscriptionWorker {
+public struct TranscriptionWorker: @unchecked Sendable {
     private let transcriber: AudioTranscribing
     private let maxRetries: Int
 

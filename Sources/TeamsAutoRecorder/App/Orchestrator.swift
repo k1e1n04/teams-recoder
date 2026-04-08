@@ -1,19 +1,14 @@
 import Foundation
 
 public final class RecorderOrchestrator {
-    private enum SessionFinishOutcome {
-        case success
-        case failure(TranscriptionFailure)
-    }
-
     public let repository: SessionRepository
+    public let transcriptionQueue: TranscriptionQueue
 
     private let detector: MeetingDetector
     private let captureEngine: CaptureEngine
-    private let worker: TranscriptionWorker
-    private let artifactStore: SessionAudioArtifactStore?
     private var appStateMachine = AppStateMachine()
     private var currentSessionStartedAt: Date?
+
     public var isRecording: Bool {
         if case .recording = appStateMachine.state { return true }
         return false
@@ -28,17 +23,15 @@ public final class RecorderOrchestrator {
     ) {
         self.detector = detector
         self.captureEngine = captureEngine
-        self.worker = worker
         self.repository = repository
-        self.artifactStore = artifactStore
+        self.transcriptionQueue = TranscriptionQueue(worker: worker, repository: repository, artifactStore: artifactStore)
     }
 
     @discardableResult
     public func tick(
         windowActive: Bool,
         audioActive: Bool,
-        now: Date,
-        onTranscriptionStarted: (@MainActor @Sendable () -> Void)? = nil
+        now: Date
     ) async -> MeetingDetectorEvent? {
         let event = detector.ingest(windowActive: windowActive, audioActive: audioActive, at: now)
         guard let event else {
@@ -67,16 +60,8 @@ public final class RecorderOrchestrator {
             return event
 
         case let .stopped(sessionID):
-            if let onTranscriptionStarted {
-                await MainActor.run(body: onTranscriptionStarted)
-            }
-            let outcome = await finishSession(sessionID: sessionID, now: now)
-            switch outcome {
-            case .success:
-                return .stopped(sessionID: sessionID)
-            case let .failure(failure):
-                return .transcriptionFailed(sessionID: sessionID, reason: failure.description)
-            }
+            await finishSession(sessionID: sessionID, now: now)
+            return .stopped(sessionID: sessionID)
 
         case .fallbackToNotifyOnly:
             return .fallbackToNotifyOnly
@@ -95,74 +80,25 @@ public final class RecorderOrchestrator {
 
     public func stopManualRecording(now: Date = Date()) async -> MeetingDetectorEvent? {
         guard case let .recording(sessionID) = appStateMachine.state else { return nil }
-        let outcome = await finishSession(sessionID: sessionID, now: now)
-        switch outcome {
-        case .success:
-            return .stopped(sessionID: sessionID)
-        case let .failure(failure):
-            return .transcriptionFailed(sessionID: sessionID, reason: failure.description)
-        }
+        await finishSession(sessionID: sessionID, now: now)
+        return .stopped(sessionID: sessionID)
     }
 
-    private func finishSession(sessionID: String, now: Date) async -> SessionFinishOutcome {
-        _ = appStateMachine.startTranscription()
+    private func finishSession(sessionID: String, now: Date) async {
         guard let artifact = try? captureEngine.stop() else {
             appStateMachine.reset()
-            return .failure(.init(
-                attempts: 0,
-                stage: .captureFinalize,
-                description: "failed to finalize captured audio"
-            ))
+            currentSessionStartedAt = nil
+            return
         }
-
-        let result = await worker.run(job: .init(sessionID: sessionID, audioURL: artifact.mixedAudioURL))
-        switch result {
-        case let .success(transcript):
-            let startedAt = currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970
-            let record = SessionRecord(
-                sessionID: sessionID,
-                startedAt: startedAt,
-                endedAt: now.timeIntervalSince1970,
-                transcriptText: transcript.fullText
-            )
-            do {
-                try repository.saveSession(record)
-                try artifactStore?.deleteArtifact(for: sessionID)
-            } catch {
-                appStateMachine.reset()
-                return .failure(.init(
-                    attempts: 0,
-                    stage: .sessionSave,
-                    description: "sessionSaveFailed(\(String(describing: error)))"
-                ))
-            }
-            _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
-            appStateMachine.reset()
-            return .success
-        case let .failure(failure):
-            let startedAt = currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970
-            let record = SessionRecord(
-                sessionID: sessionID,
-                startedAt: startedAt,
-                endedAt: now.timeIntervalSince1970,
-                transcriptText: "[transcription failed] \(failure.description)",
-                failureStage: failure.stage,
-                failureReason: failure.description
-            )
-            do {
-                try repository.saveSession(record)
-            } catch {
-                appStateMachine.reset()
-                return .failure(.init(
-                    attempts: 0,
-                    stage: .sessionSave,
-                    description: "sessionSaveFailed(\(String(describing: error)))"
-                ))
-            }
-            _ = appStateMachine.finish(transcriptPath: artifact.mixedAudioURL.path)
-            appStateMachine.reset()
-            return .failure(failure)
-        }
+        let job = TranscriptionQueue.Job(
+            sessionID: sessionID,
+            audioURL: artifact.mixedAudioURL,
+            startedAt: currentSessionStartedAt?.timeIntervalSince1970 ?? now.timeIntervalSince1970,
+            endedAt: now.timeIntervalSince1970
+        )
+        await transcriptionQueue.enqueue(job)
+        appStateMachine.reset()
+        currentSessionStartedAt = nil
     }
 }
 
@@ -243,10 +179,7 @@ public final class RecorderRuntime {
     }
 
     @discardableResult
-    public func runIteration(
-        at now: Date = Date(),
-        onTranscriptionStarted: (@MainActor @Sendable () -> Void)? = nil
-    ) async -> MeetingDetectorEvent? {
+    public func runIteration(at now: Date = Date()) async -> MeetingDetectorEvent? {
         let windowActive = windowSignalProvider.isMeetingWindowActive(at: now)
         var audioActive = audioSignalProvider.isAudioActive(at: now)
         if windowActive {
@@ -256,8 +189,7 @@ public final class RecorderRuntime {
             return await orchestrator.tick(
                 windowActive: windowActive,
                 audioActive: audioActive,
-                now: now,
-                onTranscriptionStarted: onTranscriptionStarted
+                now: now
             )
         }
         guard let tickHandler else {
