@@ -160,6 +160,14 @@ if [[ -z "$version" ]]; then
   exit 1
 fi
 
+# --- ヘルパー CLI ビルド & バンドル ---
+echo "Building TeamsAutoRecorderMCP helper..."
+swift build -c release --target TeamsAutoRecorderMCP
+HELPER_SRC="$ROOT_DIR/.build/release/TeamsAutoRecorderMCP"
+HELPER_DST="$APP_PATH/Contents/MacOS/TeamsAutoRecorderMCP"
+cp "$HELPER_SRC" "$HELPER_DST"
+echo "Helper bundled: $HELPER_DST"
+
 # --- Codesign .app (--sign 指定時、--no-build でも再署名) ---
 if [[ -n "$SIGN_IDENTITY" ]]; then
   echo "Signing $APP_PATH ..."

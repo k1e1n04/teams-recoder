@@ -53,6 +53,43 @@ swift build
 swift test
 ```
 
+## Claude Code MCP 連携
+
+TeamsAutoRecorder には MCP サーバーが内蔵されています。Claude Code から文字起こし取得・サマリ登録などができます。
+
+### 前提
+
+- TeamsAutoRecorder.app が起動中で、メニューバーの MCP サーバースイッチが ON になっていること
+
+### 設定方法
+
+Claude Code の MCP 設定（`~/.claude/settings.json` または `.claude/settings.json`）に以下を追加します。
+
+```json
+{
+  "mcpServers": {
+    "teams-auto-recorder": {
+      "type": "stdio",
+      "command": "/Applications/TeamsAutoRecorder.app/Contents/MacOS/TeamsAutoRecorderMCP"
+    }
+  }
+}
+```
+
+ヘルパーバイナリ `TeamsAutoRecorderMCP` はアプリバンドル内に同梱されています。インストール後すぐに利用可能です。
+
+### 利用可能なツール
+
+| ツール | 説明 |
+|--------|------|
+| `list_sessions` | 録音済みセッション一覧を取得 |
+| `get_transcript` | 指定セッションの文字起こしを取得 |
+| `save_session_summary` | セッションサマリを保存 |
+| `save_daily_summary` | 日次サマリを保存 |
+| `get_daily_summary` | 日次サマリを取得 |
+
+---
+
 ## 公証
 
 `xcrun notarytool store-credentials` で notary 用の認証情報を Keychain に保存すると、後続の公証で `--keychain-profile` として再利用できます。
