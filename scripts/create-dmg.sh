@@ -161,8 +161,9 @@ if [[ -z "$version" ]]; then
 fi
 
 # --- ヘルパー CLI ビルド & バンドル ---
+# --target を指定するとリンクがスキップされるため全ターゲットをビルドする
 echo "Building TeamsAutoRecorderMCP helper..."
-swift build -c release --target TeamsAutoRecorderMCP
+swift build -c release
 HELPER_SRC="$ROOT_DIR/.build/release/TeamsAutoRecorderMCP"
 HELPER_DST="$APP_PATH/Contents/MacOS/TeamsAutoRecorderMCP"
 cp "$HELPER_SRC" "$HELPER_DST"
