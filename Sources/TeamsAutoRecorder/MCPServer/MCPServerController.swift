@@ -103,15 +103,20 @@ final class RealMCPServer: MCPServerProtocol, @unchecked Sendable {
     func run(port: Int) async throws {
         let handler = toolHandler
 
-        let app = MCPHTTPApp(port: port) { _, transport in
-            let server = Server(
-                name: "teams-auto-recorder",
-                version: "1.0.0",
-                capabilities: Server.Capabilities(tools: .init())
-            )
-            await handler.register(on: server)
-            return server
-        }
+        // バリデーションなしのステートレストランスポートを使用
+        // Claude Code はセッション管理を必要としないため StatelessHTTPServerTransport を採用
+        let transport = StatelessHTTPServerTransport(
+            validationPipeline: StandardValidationPipeline(validators: [])
+        )
+        let server = Server(
+            name: "teams-auto-recorder",
+            version: "1.0.0",
+            capabilities: Server.Capabilities(tools: .init())
+        )
+        await handler.register(on: server)
+        try await server.start(transport: transport)
+
+        let app = MCPHTTPApp(port: port, transport: transport)
         try await app.start()
         self.channel = await app.channel
     }
@@ -125,84 +130,31 @@ final class RealMCPServer: MCPServerProtocol, @unchecked Sendable {
 // MARK: - Minimal NIO HTTP Server for MCP
 
 private actor MCPHTTPApp {
-    typealias ServerFactory = @Sendable (String, StatefulHTTPServerTransport) async throws -> Server
-
     private let port: Int
-    private let serverFactory: ServerFactory
-    private var sessions: [String: SessionContext] = [:]
+    private let transport: StatelessHTTPServerTransport
     private(set) var channel: Channel?
 
-    struct SessionContext {
-        let server: Server
-        let transport: StatefulHTTPServerTransport
-    }
-
-    init(port: Int, serverFactory: @escaping ServerFactory) {
+    init(port: Int, transport: StatelessHTTPServerTransport) {
         self.port = port
-        self.serverFactory = serverFactory
+        self.transport = transport
     }
 
     func start() async throws {
         let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-        let app = self
+        let transport = self.transport
 
         let bootstrap = ServerBootstrap(group: group)
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
             .childChannelInitializer { channel in
                 channel.pipeline.configureHTTPServerPipeline().flatMap {
-                    channel.pipeline.addHandler(MCPHTTPHandler(app: app))
+                    channel.pipeline.addHandler(MCPHTTPHandler(transport: transport))
                 }
             }
 
         let ch = try await bootstrap.bind(host: "127.0.0.1", port: port).get()
         self.channel = ch
         try await ch.closeFuture.get()
-    }
-
-    func handleRequest(_ request: HTTPRequest) async -> HTTPResponse {
-        let sessionID = request.headers["Mcp-Session-Id"]
-
-        if let sessionID, let session = sessions[sessionID] {
-            return await session.transport.handleRequest(request)
-        }
-
-        if request.method.uppercased() == "POST",
-            let body = request.body,
-            isInitializeRequest(body)
-        {
-            return await createSessionAndHandle(request)
-        }
-
-        return .error(statusCode: 400, .invalidRequest("Bad Request: no session"))
-    }
-
-    private func createSessionAndHandle(_ request: HTTPRequest) async -> HTTPResponse {
-        let sessionID = UUID().uuidString
-
-        struct FixedIDGen: SessionIDGenerator {
-            let id: String
-            func generateSessionID() -> String { id }
-        }
-
-        let transport = StatefulHTTPServerTransport(sessionIDGenerator: FixedIDGen(id: sessionID))
-
-        do {
-            let server = try await serverFactory(sessionID, transport)
-            try await server.start(transport: transport)
-            sessions[sessionID] = SessionContext(server: server, transport: transport)
-            return await transport.handleRequest(request)
-        } catch {
-            await transport.disconnect()
-            return .error(statusCode: 500, .internalError("Failed to create session"))
-        }
-    }
-
-    private func isInitializeRequest(_ body: Data) -> Bool {
-        guard let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
-              let method = json["method"] as? String
-        else { return false }
-        return method == "initialize"
     }
 }
 
@@ -212,12 +164,12 @@ private final class MCPHTTPHandler: ChannelInboundHandler, @unchecked Sendable {
     typealias InboundIn = HTTPServerRequestPart
     typealias OutboundOut = HTTPServerResponsePart
 
-    private let app: MCPHTTPApp
+    private let transport: StatelessHTTPServerTransport
     private var head: HTTPRequestHead?
     private var bodyBuffer: ByteBuffer?
 
-    init(app: MCPHTTPApp) {
-        self.app = app
+    init(transport: StatelessHTTPServerTransport) {
+        self.transport = transport
     }
 
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
@@ -241,19 +193,6 @@ private final class MCPHTTPHandler: ChannelInboundHandler, @unchecked Sendable {
     }
 
     private func process(head: HTTPRequestHead, buffer: ByteBuffer?, context: ChannelHandlerContext) async {
-        // GET リクエストは 405 を返す（SSE 未サポート）
-        // JSON-RPC 形式で返すと Claude Code が OAuth エラーとして誤解釈するため plain HTTP で返す
-        if head.method == .GET {
-            nonisolated(unsafe) let ctx = context
-            ctx.eventLoop.execute {
-                var respHead = HTTPResponseHead(version: head.version, status: .methodNotAllowed)
-                respHead.headers.add(name: "Allow", value: "POST")
-                ctx.write(self.wrapOutboundOut(.head(respHead)), promise: nil)
-                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-            }
-            return
-        }
-
         var headers: [String: String] = [:]
         for (name, value) in head.headers {
             headers[name] = value
@@ -274,53 +213,25 @@ private final class MCPHTTPHandler: ChannelInboundHandler, @unchecked Sendable {
             path: String(head.uri.split(separator: "?").first ?? Substring(head.uri))
         )
 
-        let response = await app.handleRequest(request)
+        let response = await transport.handleRequest(request)
         nonisolated(unsafe) let ctx = context
 
-        switch response {
-        case .stream(let stream, _):
-            let statusCode = response.statusCode
-            let respHeaders = response.headers
-            ctx.eventLoop.execute {
-                var respHead = HTTPResponseHead(
-                    version: head.version,
-                    status: HTTPResponseStatus(statusCode: statusCode)
-                )
-                for (k, v) in respHeaders { respHead.headers.add(name: k, value: v) }
-                ctx.write(self.wrapOutboundOut(.head(respHead)), promise: nil)
-                ctx.flush()
+        let statusCode = response.statusCode
+        let respHeaders = response.headers
+        let bodyData = response.bodyData
+        ctx.eventLoop.execute {
+            var respHead = HTTPResponseHead(
+                version: head.version,
+                status: HTTPResponseStatus(statusCode: statusCode)
+            )
+            for (k, v) in respHeaders { respHead.headers.add(name: k, value: v) }
+            ctx.write(self.wrapOutboundOut(.head(respHead)), promise: nil)
+            if let data = bodyData {
+                var buf = ctx.channel.allocator.buffer(capacity: data.count)
+                buf.writeBytes(data)
+                ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buf))), promise: nil)
             }
-            do {
-                for try await chunk in stream {
-                    ctx.eventLoop.execute {
-                        var buf = ctx.channel.allocator.buffer(capacity: chunk.count)
-                        buf.writeBytes(chunk)
-                        ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buf))), promise: nil)
-                    }
-                }
-            } catch {}
-            ctx.eventLoop.execute {
-                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-            }
-
-        default:
-            let statusCode = response.statusCode
-            let respHeaders = response.headers
-            let bodyData = response.bodyData
-            ctx.eventLoop.execute {
-                var respHead = HTTPResponseHead(
-                    version: head.version,
-                    status: HTTPResponseStatus(statusCode: statusCode)
-                )
-                for (k, v) in respHeaders { respHead.headers.add(name: k, value: v) }
-                ctx.write(self.wrapOutboundOut(.head(respHead)), promise: nil)
-                if let data = bodyData {
-                    var buf = ctx.channel.allocator.buffer(capacity: data.count)
-                    buf.writeBytes(data)
-                    ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buf))), promise: nil)
-                }
-                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-            }
+            ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
         }
     }
 }
