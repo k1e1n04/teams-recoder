@@ -2,9 +2,11 @@
 import Foundation
 import Logging
 import MCP
-import NIOCore
-import NIOHTTP1
-import NIOPosix
+import System
+
+#if canImport(Darwin)
+    import Darwin
+#endif
 
 // MARK: - Protocols
 
@@ -43,7 +45,7 @@ public final class DefaultMCPServerController: MCPServerControlling, @unchecked 
         self.init(
             toolHandler: toolHandler,
             defaults: defaults,
-            serverFactory: { port in RealMCPServer(toolHandler: toolHandler, port: port) }
+            serverFactory: { _ in RealMCPServer(toolHandler: toolHandler) }
         )
     }
 
@@ -88,168 +90,97 @@ private struct NoOpMCPServer: MCPServerProtocol {
     func shutdown() {}
 }
 
-// MARK: - Real MCP HTTP Server
+// MARK: - Real MCP Unix Socket Server
 
 final class RealMCPServer: MCPServerProtocol, @unchecked Sendable {
-    private let toolHandler: MCPToolHandler
-    private let targetPort: Int
-    private var channel: Channel?
+    static let socketPath = "/tmp/teams-auto-recorder-mcp.sock"
 
-    init(toolHandler: MCPToolHandler, port: Int) {
+    private let toolHandler: MCPToolHandler
+
+    init(toolHandler: MCPToolHandler) {
         self.toolHandler = toolHandler
-        self.targetPort = port
     }
 
     func run(port: Int) async throws {
-        let handler = toolHandler
+        let socketPath = Self.socketPath
 
-        // バリデーションなしのステートレストランスポートを使用
-        // Claude Code はセッション管理を必要としないため StatelessHTTPServerTransport を採用
-        let transport = StatelessHTTPServerTransport(
-            validationPipeline: StandardValidationPipeline(validators: [])
-        )
-        let server = Server(
-            name: "teams-auto-recorder",
-            version: "1.0.0",
-            capabilities: Server.Capabilities(tools: .init())
-        )
-        await handler.register(on: server)
-        try await server.start(transport: transport)
+        // 既存ソケットファイルを削除
+        unlink(socketPath)
 
-        let app = MCPHTTPApp(port: port, transport: transport)
-        try await app.start()
-        self.channel = await app.channel
-    }
+        let serverFd = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
+        guard serverFd >= 0 else {
+            throw MCPServerError.socketCreationFailed(errno)
+        }
 
-    func shutdown() {
-        guard let ch = channel else { return }
-        Task { try? await ch.close() }
-    }
-}
-
-// MARK: - Minimal NIO HTTP Server for MCP
-
-private actor MCPHTTPApp {
-    private let port: Int
-    private let transport: StatelessHTTPServerTransport
-    private(set) var channel: Channel?
-
-    init(port: Int, transport: StatelessHTTPServerTransport) {
-        self.port = port
-        self.transport = transport
-    }
-
-    func start() async throws {
-        let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-        let transport = self.transport
-
-        let bootstrap = ServerBootstrap(group: group)
-            .serverChannelOption(ChannelOptions.backlog, value: 256)
-            .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
-            .childChannelInitializer { channel in
-                channel.pipeline.configureHTTPServerPipeline().flatMap {
-                    channel.pipeline.addHandler(MCPHTTPHandler(transport: transport))
+        var addr = sockaddr_un()
+        addr.sun_len = UInt8(MemoryLayout<sockaddr_un>.size)
+        addr.sun_family = sa_family_t(AF_UNIX)
+        socketPath.withCString { src in
+            withUnsafeMutablePointer(to: &addr.sun_path) { dest in
+                dest.withMemoryRebound(to: CChar.self, capacity: 104) {
+                    _ = strncpy($0, src, 103)
                 }
             }
+        }
 
-        let ch = try await bootstrap.bind(host: "127.0.0.1", port: port).get()
-        self.channel = ch
-        try await ch.closeFuture.get()
+        let bindResult = withUnsafePointer(to: addr) { ptr in
+            ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.bind(serverFd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+            }
+        }
+        guard bindResult == 0 else {
+            Darwin.close(serverFd)
+            throw MCPServerError.bindFailed(errno)
+        }
+
+        guard Darwin.listen(serverFd, 5) == 0 else {
+            Darwin.close(serverFd)
+            throw MCPServerError.listenFailed(errno)
+        }
+
+        // ノンブロッキングモードに設定してキャンセルに対応
+        let flags = fcntl(serverFd, F_GETFL, 0)
+        _ = fcntl(serverFd, F_SETFL, flags | O_NONBLOCK)
+
+        defer {
+            Darwin.close(serverFd)
+            unlink(socketPath)
+        }
+
+        while !Task.isCancelled {
+            let clientFd = Darwin.accept(serverFd, nil, nil)
+            if clientFd < 0 {
+                if errno == EAGAIN || errno == EWOULDBLOCK {
+                    try await Task.sleep(nanoseconds: 10_000_000) // 10ms ポーリング
+                    continue
+                }
+                if errno == EINTR { continue }
+                break
+            }
+
+            let handler = toolHandler
+            Task {
+                let fd = FileDescriptor(rawValue: clientFd)
+                let transport = StdioTransport(input: fd, output: fd)
+                let server = Server(
+                    name: "teams-auto-recorder",
+                    version: "1.0.0",
+                    capabilities: Server.Capabilities(tools: .init())
+                )
+                await handler.register(on: server)
+                try? await server.start(transport: transport)
+                try? fd.close()
+            }
+        }
     }
+
+    func shutdown() {}
 }
 
-// MARK: - NIO Channel Handler
+// MARK: - Errors
 
-private final class MCPHTTPHandler: ChannelInboundHandler, @unchecked Sendable {
-    typealias InboundIn = HTTPServerRequestPart
-    typealias OutboundOut = HTTPServerResponsePart
-
-    private let transport: StatelessHTTPServerTransport
-    private var head: HTTPRequestHead?
-    private var bodyBuffer: ByteBuffer?
-
-    init(transport: StatelessHTTPServerTransport) {
-        self.transport = transport
-    }
-
-    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        switch unwrapInboundIn(data) {
-        case .head(let h):
-            head = h
-            bodyBuffer = context.channel.allocator.buffer(capacity: 0)
-        case .body(var buf):
-            bodyBuffer?.writeBuffer(&buf)
-        case .end:
-            guard let h = head else { return }
-            let buf = bodyBuffer
-            head = nil
-            bodyBuffer = nil
-
-            nonisolated(unsafe) let ctx = context
-            Task { @MainActor in
-                await self.process(head: h, buffer: buf, context: ctx)
-            }
-        }
-    }
-
-    private func process(head: HTTPRequestHead, buffer: ByteBuffer?, context: ChannelHandlerContext) async {
-        let path = String(head.uri.split(separator: "?").first ?? Substring(head.uri))
-
-        // OAuth ディスカバリエンドポイントは 404 で返す（認証不要サーバーの標準的な応答）
-        if path == "/.well-known/oauth-authorization-server"
-            || path == "/.well-known/oauth-protected-resource" {
-            nonisolated(unsafe) let ctx = context
-            ctx.eventLoop.execute {
-                var respHead = HTTPResponseHead(
-                    version: head.version,
-                    status: .notFound
-                )
-                respHead.headers.add(name: "content-length", value: "0")
-                ctx.write(self.wrapOutboundOut(.head(respHead)), promise: nil)
-                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-            }
-            return
-        }
-
-        var headers: [String: String] = [:]
-        for (name, value) in head.headers {
-            headers[name] = value
-        }
-
-        let body: Data?
-        if let buf = buffer, buf.readableBytes > 0,
-           let bytes = buf.getBytes(at: 0, length: buf.readableBytes) {
-            body = Data(bytes)
-        } else {
-            body = nil
-        }
-
-        let request = HTTPRequest(
-            method: head.method.rawValue,
-            headers: headers,
-            body: body,
-            path: path
-        )
-
-        let response = await transport.handleRequest(request)
-        nonisolated(unsafe) let ctx = context
-
-        let statusCode = response.statusCode
-        let respHeaders = response.headers
-        let bodyData = response.bodyData
-        ctx.eventLoop.execute {
-            var respHead = HTTPResponseHead(
-                version: head.version,
-                status: HTTPResponseStatus(statusCode: statusCode)
-            )
-            for (k, v) in respHeaders { respHead.headers.add(name: k, value: v) }
-            ctx.write(self.wrapOutboundOut(.head(respHead)), promise: nil)
-            if let data = bodyData {
-                var buf = ctx.channel.allocator.buffer(capacity: data.count)
-                buf.writeBytes(data)
-                ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buf))), promise: nil)
-            }
-            ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-        }
-    }
+private enum MCPServerError: Error {
+    case socketCreationFailed(Int32)
+    case bindFailed(Int32)
+    case listenFailed(Int32)
 }
