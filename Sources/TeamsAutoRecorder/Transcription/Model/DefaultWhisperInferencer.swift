@@ -39,6 +39,12 @@ public final class DefaultWhisperInferencer: WhisperInferencing {
     static func sanitizeSegmentText(_ text: String) -> String {
         text
             .replacingOccurrences(of: "<\\|[^|]+\\|>", with: "", options: .regularExpression)
+            // Whisperが幻覚として生成する括弧付き日本語名（例: (山本) （中村））を除去する
+            .replacingOccurrences(
+                of: "[\\uFF08(][\\u4E00-\\u9FFF\\u3040-\\u30FF]{1,6}[\\uFF09)]\\s*",
+                with: "",
+                options: .regularExpression
+            )
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
