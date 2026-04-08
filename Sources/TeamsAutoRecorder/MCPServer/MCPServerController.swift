@@ -169,6 +169,8 @@ final class RealMCPServer: MCPServerProtocol, @unchecked Sendable {
                 )
                 await handler.register(on: server)
                 try? await server.start(transport: transport)
+                // start() は即座に return するため、接続が閉じるまで待機してから fd を閉じる
+                await server.waitUntilCompleted()
                 try? fd.close()
             }
         }
