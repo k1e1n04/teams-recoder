@@ -30,6 +30,46 @@ final class MeetingDetectorTests: XCTestCase {
         XCTAssertEqual(stop, .stopped(sessionID: "session-0"))
     }
 
+    func testContinuesRecordingWhenWindowLosesFocusButAudioRemains() {
+        let config = MeetingDetectorConfig(
+            startUISeconds: 1,
+            audioWindowSeconds: 4,
+            audioRequiredRatio: 0.5,
+            stopGraceSeconds: 2,
+            minRecordingSeconds: 5,
+            falsePositiveCapPerDay: 2
+        )
+        let detector = MeetingDetector(config: config)
+        let base = Date(timeIntervalSince1970: 0)
+
+        _ = detector.ingest(windowActive: true, audioActive: true, at: base)
+        // 他のウィンドウにフォーカスしても音声がある限り停止しない
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(1)))
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(2)))
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(4)))
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(10)))
+    }
+
+    func testStopsRecordingWhenWindowLosesFocusAndAudioAlsoStops() {
+        let config = MeetingDetectorConfig(
+            startUISeconds: 1,
+            audioWindowSeconds: 4,
+            audioRequiredRatio: 0.5,
+            stopGraceSeconds: 2,
+            minRecordingSeconds: 5,
+            falsePositiveCapPerDay: 2
+        )
+        let detector = MeetingDetector(config: config)
+        let base = Date(timeIntervalSince1970: 0)
+
+        _ = detector.ingest(windowActive: true, audioActive: true, at: base)
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: false, at: base.addingTimeInterval(1)))
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: false, at: base.addingTimeInterval(2)))
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: false, at: base.addingTimeInterval(4)))
+        let stop = detector.ingest(windowActive: false, audioActive: false, at: base.addingTimeInterval(5))
+        XCTAssertEqual(stop, .stopped(sessionID: "session-0"))
+    }
+
     func testContinuesRecordingWhenAudioDropsButWindowRemainsActive() {
         let config = MeetingDetectorConfig(
             startUISeconds: 1,

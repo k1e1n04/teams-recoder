@@ -80,7 +80,7 @@ public final class MeetingDetector {
                 return .started(sessionID: sessionID)
             }
         case let .recording(sessionID, startedAt):
-            let shouldStop = !windowActive
+            let shouldStop = !windowActive && !audioActive
             if shouldStop {
                 stopStreakSeconds += 1
             } else {
