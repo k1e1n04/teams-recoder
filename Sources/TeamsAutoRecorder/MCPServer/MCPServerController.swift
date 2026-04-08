@@ -241,6 +241,19 @@ private final class MCPHTTPHandler: ChannelInboundHandler, @unchecked Sendable {
     }
 
     private func process(head: HTTPRequestHead, buffer: ByteBuffer?, context: ChannelHandlerContext) async {
+        // GET リクエストは 405 を返す（SSE 未サポート）
+        // JSON-RPC 形式で返すと Claude Code が OAuth エラーとして誤解釈するため plain HTTP で返す
+        if head.method == .GET {
+            nonisolated(unsafe) let ctx = context
+            ctx.eventLoop.execute {
+                var respHead = HTTPResponseHead(version: head.version, status: .methodNotAllowed)
+                respHead.headers.add(name: "Allow", value: "POST")
+                ctx.write(self.wrapOutboundOut(.head(respHead)), promise: nil)
+                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+            }
+            return
+        }
+
         var headers: [String: String] = [:]
         for (name, value) in head.headers {
             headers[name] = value

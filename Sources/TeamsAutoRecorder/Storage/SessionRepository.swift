@@ -37,7 +37,7 @@ public struct TranscriptExportURLs: Equatable {
     public let json: URL
 }
 
-public final class SessionRepository {
+public final class SessionRepository: @unchecked Sendable {
     private let database: Database
     private let fileManager: FileManager
     private let artifactStore: SessionAudioArtifactStore?

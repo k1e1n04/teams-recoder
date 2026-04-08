@@ -13,6 +13,15 @@ packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation.git
     from: 0.9.0
+  swift-sdk:
+    url: https://github.com/modelcontextprotocol/swift-sdk.git
+    from: 0.7.0
+  swift-nio:
+    url: https://github.com/apple/swift-nio.git
+    from: 2.0.0
+  swift-log:
+    url: https://github.com/apple/swift-log.git
+    from: 1.0.0
 targets:
   TeamsAutoRecorder:
     type: application
@@ -22,6 +31,16 @@ targets:
     dependencies:
       - package: WhisperKit
       - package: ZIPFoundation
+      - package: swift-sdk
+        product: MCP
+      - package: swift-nio
+        product: NIOCore
+      - package: swift-nio
+        product: NIOPosix
+      - package: swift-nio
+        product: NIOHTTP1
+      - package: swift-log
+        product: Logging
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

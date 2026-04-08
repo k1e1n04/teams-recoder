@@ -10,34 +10,42 @@
 		0718D3538FD3351B7FCE573A /* TeamsWindowSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */; };
 		0954B63ABE167108494A615B /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E0F1E1512929AD5C6BCFB5 /* MenuBarController.swift */; };
 		0E0BC369150DF854F3AC12EF /* AppSupportDirectoryResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FE270A018DD92542567B4E9 /* AppSupportDirectoryResolver.swift */; };
+		12C5987EF5AE8713A427F600 /* SummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9FBC2ECB4825CB47997AD4 /* SummaryStore.swift */; };
 		1E6B86AA48FA6BCB22B04908 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3187CA4344D0C2789FDBB2A /* AppState.swift */; };
 		1F59CC4EAFE2B87D84276A40 /* SlackHuddleWindowClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EE91CF04039D43C9D1D2FCF /* SlackHuddleWindowClassifier.swift */; };
-		F8BF796CFC82483E921E9215 /* AudioChunker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F88ABBC90640BE99E86D56 /* AudioChunker.swift */; };
 		20BACEE68AA64E6EB59F6FE9 /* TeamsAccessibilityTextCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 009E776C0DCAAF21A3CBB6EE /* TeamsAccessibilityTextCollector.swift */; };
 		233318A46E99CCF086632FE9 /* AudioSignalProviderFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635EBD87448D7E49DC719226 /* AudioSignalProviderFactory.swift */; };
 		2EFD4C81A411E5FC9EBB6EED /* SessionAudioArtifactStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6692CB8CDF6688F876E8D293 /* SessionAudioArtifactStore.swift */; };
 		2FC63D5B945056AEA4C1001A /* FallbackAudioSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */; };
 		354EEA0847A3959C59D0D5EB /* TranscriptionFailureMessageFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B39862EA7A005B55681BF60C /* TranscriptionFailureMessageFormatter.swift */; };
+		3A2762B2A0EF3A908CEAC9AD /* AudioChunker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D785DCBD03B4AFB7CCF41B01 /* AudioChunker.swift */; };
 		40EDC1295F63C6BD1A99D580 /* DefaultWhisperInferencer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DCADF51CAD7B23159EA763A /* DefaultWhisperInferencer.swift */; };
+		4C1768A653335603B816C2B7 /* NIOCore in Frameworks */ = {isa = PBXBuildFile; productRef = FD4F49DFECF65EA01BB03F63 /* NIOCore */; };
 		4CC38E9EDE2174C3505915E7 /* Orchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728CBA3A55318797F526CADD /* Orchestrator.swift */; };
 		5024222E23FF0516CC0207C1 /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88033F4EE313D5855BB38E9B /* SessionRepository.swift */; };
 		6E4376385544B03ED6397DB0 /* MeetingDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E31ABD63F8FD47C26B1705 /* MeetingDetector.swift */; };
 		781429B4E55BE4A61DFCBA7C /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04058DB234ED210257C5ACAB /* Main.swift */; };
+		808EE89F3F69367653312E95 /* NIOPosix in Frameworks */ = {isa = PBXBuildFile; productRef = 9CD400A044B8D634CA400615 /* NIOPosix */; };
 		80D5CCD1EEA255161EA6DF76 /* LaunchAtLoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9286895439BECFE9DA08D98 /* LaunchAtLoginManager.swift */; };
 		849F5F56F1F6B36993F0C071 /* AudioMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1C90C3985FFD0CBD2597EE5 /* AudioMixer.swift */; };
 		8931CD46AEFA85258DFB7657 /* PermissionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149B830B5142099F8F16D1CE /* PermissionCoordinator.swift */; };
 		8C62888ECD5F985071FCE243 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9921F6FE321B5F0A2C5DF33B /* WhisperKit */; };
 		8E01932D775BEFAA929FF882 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABB8060637C69A37D104CA69 /* DashboardViewModel.swift */; };
+		8E52BCAB8D0F2F77B26D1A33 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 12A84D93056927DD45044D7C /* MCP */; };
 		92F3D5B1E81962E28F5250E3 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C7D6AF0013B48AB28D8161B /* Database.swift */; };
 		93AC5D21521FB3805C869F9A /* TranscriptionWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 860278D30896B2227C270FBE /* TranscriptionWorker.swift */; };
 		998F1DCB9466C040DF0205A7 /* TeamsAudioSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */; };
+		9C6DF54D2B2FA78ED9055500 /* MCPServerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A6B484AF81AD709699B29F /* MCPServerController.swift */; };
 		A63BF37ED1429286B6FFF43B /* TeamsMeetingControlEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E9039CD77612DEE9D4FF5E6 /* TeamsMeetingControlEvaluator.swift */; };
+		A6EAC4617CC4DC986EBBDF91 /* NIOHTTP1 in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9696D4BF89783D3254847D /* NIOHTTP1 */; };
 		A8B33A843C0A72AA7FC59C71 /* WhisperModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98E80DB113D0DD0BBFE116A /* WhisperModelManager.swift */; };
 		AD139C6284592E7A613AB886 /* WhisperModelManaging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A31F2F6597B9A816A563AC1 /* WhisperModelManaging.swift */; };
 		CEC6D9915F1604049E7E32E8 /* TeamsWindowOCRTextCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B1D44EB6D340879B0B2BB2 /* TeamsWindowOCRTextCollector.swift */; };
 		D621AEA98CBC019063184490 /* TeamsMeetingWindowClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F9969BB62AD45E6039F224 /* TeamsMeetingWindowClassifier.swift */; };
+		D783C3AA1D46BA6ABDBEE95F /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 2FCBA5C3BB41CBA25CB49719 /* Logging */; };
 		DE5CC3FFCFBE0137F8C41A63 /* CompositeWindowSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD7ED8FF494C90EE094DCC00 /* CompositeWindowSignalProvider.swift */; };
 		F024C025090C661851254440 /* WhisperKitTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62BD51C27DFD71159FDB7479 /* WhisperKitTranscriber.swift */; };
+		F5EBB01B5EFBB6EAF9F414CF /* MCPToolHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60C0FAD38F948EA468372DF5 /* MCPToolHandler.swift */; };
 		F7D0B0CB608C8B43D83265C4 /* DefaultWhisperModelDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67773F507000A9EC666439C3 /* DefaultWhisperModelDownloader.swift */; };
 		F87F2D45085DE51C0CDA3997 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DBBCF66849CD7664A63F19EB /* Assets.xcassets */; };
 		F8EA7351FB219465860E7782 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 6CCEBA2327530615D69ADD92 /* ZIPFoundation */; };
@@ -45,11 +53,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		25F88ABBC90640BE99E86D56 /* AudioChunker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioChunker.swift; sourceTree = "<group>"; };
 		009E776C0DCAAF21A3CBB6EE /* TeamsAccessibilityTextCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsAccessibilityTextCollector.swift; sourceTree = "<group>"; };
 		02E31ABD63F8FD47C26B1705 /* MeetingDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetector.swift; sourceTree = "<group>"; };
 		04058DB234ED210257C5ACAB /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
 		0C7D6AF0013B48AB28D8161B /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
+		0F9FBC2ECB4825CB47997AD4 /* SummaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryStore.swift; sourceTree = "<group>"; };
 		149B830B5142099F8F16D1CE /* PermissionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionCoordinator.swift; sourceTree = "<group>"; };
 		19B1D44EB6D340879B0B2BB2 /* TeamsWindowOCRTextCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsWindowOCRTextCollector.swift; sourceTree = "<group>"; };
 		1DCADF51CAD7B23159EA763A /* DefaultWhisperInferencer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultWhisperInferencer.swift; sourceTree = "<group>"; };
@@ -57,6 +65,7 @@
 		2EE91CF04039D43C9D1D2FCF /* SlackHuddleWindowClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlackHuddleWindowClassifier.swift; sourceTree = "<group>"; };
 		580E30C8423D9BAC416E8C7A /* TeamsAudioSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsAudioSignalProvider.swift; sourceTree = "<group>"; };
 		5D340D91B8E6091D33AC3EFB /* FallbackAudioSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FallbackAudioSignalProvider.swift; sourceTree = "<group>"; };
+		60C0FAD38F948EA468372DF5 /* MCPToolHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPToolHandler.swift; sourceTree = "<group>"; };
 		62BD51C27DFD71159FDB7479 /* WhisperKitTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitTranscriber.swift; sourceTree = "<group>"; };
 		635EBD87448D7E49DC719226 /* AudioSignalProviderFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSignalProviderFactory.swift; sourceTree = "<group>"; };
 		6692CB8CDF6688F876E8D293 /* SessionAudioArtifactStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionAudioArtifactStore.swift; sourceTree = "<group>"; };
@@ -69,12 +78,14 @@
 		88033F4EE313D5855BB38E9B /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
 		8E9039CD77612DEE9D4FF5E6 /* TeamsMeetingControlEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsMeetingControlEvaluator.swift; sourceTree = "<group>"; };
 		9FE270A018DD92542567B4E9 /* AppSupportDirectoryResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSupportDirectoryResolver.swift; sourceTree = "<group>"; };
+		A4A6B484AF81AD709699B29F /* MCPServerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPServerController.swift; sourceTree = "<group>"; };
 		A85D9A0A09BB446D7A756C79 /* TeamsWindowSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamsWindowSignalProvider.swift; sourceTree = "<group>"; };
 		ABB8060637C69A37D104CA69 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		AD7ED8FF494C90EE094DCC00 /* CompositeWindowSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositeWindowSignalProvider.swift; sourceTree = "<group>"; };
 		B39862EA7A005B55681BF60C /* TranscriptionFailureMessageFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionFailureMessageFormatter.swift; sourceTree = "<group>"; };
 		C9286895439BECFE9DA08D98 /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginManager.swift; sourceTree = "<group>"; };
 		C98E80DB113D0DD0BBFE116A /* WhisperModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperModelManager.swift; sourceTree = "<group>"; };
+		D785DCBD03B4AFB7CCF41B01 /* AudioChunker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioChunker.swift; sourceTree = "<group>"; };
 		DBBCF66849CD7664A63F19EB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E1C90C3985FFD0CBD2597EE5 /* AudioMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMixer.swift; sourceTree = "<group>"; };
 		E5BC70BB091E153D078C63AD /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
@@ -88,6 +99,11 @@
 			files = (
 				8C62888ECD5F985071FCE243 /* WhisperKit in Frameworks */,
 				F8EA7351FB219465860E7782 /* ZIPFoundation in Frameworks */,
+				8E52BCAB8D0F2F77B26D1A33 /* MCP in Frameworks */,
+				4C1768A653335603B816C2B7 /* NIOCore in Frameworks */,
+				808EE89F3F69367653312E95 /* NIOPosix in Frameworks */,
+				A6EAC4617CC4DC986EBBDF91 /* NIOHTTP1 in Frameworks */,
+				D783C3AA1D46BA6ABDBEE95F /* Logging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,7 +129,7 @@
 		1EB2F1E8BA695E4E5B8D672B /* Audio */ = {
 			isa = PBXGroup;
 			children = (
-				25F88ABBC90640BE99E86D56 /* AudioChunker.swift */,
+				D785DCBD03B4AFB7CCF41B01 /* AudioChunker.swift */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -197,6 +213,16 @@
 			path = Capture;
 			sourceTree = "<group>";
 		};
+		CE0C56509E07C26C7AF59650 /* MCPServer */ = {
+			isa = PBXGroup;
+			children = (
+				A4A6B484AF81AD709699B29F /* MCPServerController.swift */,
+				60C0FAD38F948EA468372DF5 /* MCPToolHandler.swift */,
+				0F9FBC2ECB4825CB47997AD4 /* SummaryStore.swift */,
+			);
+			path = MCPServer;
+			sourceTree = "<group>";
+		};
 		D999E5AF57DA022FF0AEEAC6 /* Storage */ = {
 			isa = PBXGroup;
 			children = (
@@ -214,6 +240,7 @@
 				5FB315A134CF8F2FCE2E02F2 /* App */,
 				B482EB47FACD6C69C3D2F20F /* Capture */,
 				546317F2239C13D7537E1256 /* Detector */,
+				CE0C56509E07C26C7AF59650 /* MCPServer */,
 				0459042AB7581078099AA6B5 /* Permissions */,
 				D999E5AF57DA022FF0AEEAC6 /* Storage */,
 				AB3A2BD2CEC0532D8B2D2586 /* Transcription */,
@@ -242,6 +269,11 @@
 			packageProductDependencies = (
 				9921F6FE321B5F0A2C5DF33B /* WhisperKit */,
 				6CCEBA2327530615D69ADD92 /* ZIPFoundation */,
+				12A84D93056927DD45044D7C /* MCP */,
+				FD4F49DFECF65EA01BB03F63 /* NIOCore */,
+				9CD400A044B8D634CA400615 /* NIOPosix */,
+				8F9696D4BF89783D3254847D /* NIOHTTP1 */,
+				2FCBA5C3BB41CBA25CB49719 /* Logging */,
 			);
 			productName = TeamsAutoRecorder;
 			productReference = 76E29FAACB1C955903DBB56D /* TeamsAutoRecorder.app */;
@@ -270,6 +302,9 @@
 			packageReferences = (
 				F8EF3182EC3278BD7328A530 /* XCRemoteSwiftPackageReference "WhisperKit" */,
 				28712E9B539358EA2862EF70 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				CFBDF1D8371D246168BD9BB5 /* XCRemoteSwiftPackageReference "swift-log" */,
+				B5A378BF80336677651F9FB2 /* XCRemoteSwiftPackageReference "swift-nio" */,
+				D2B405ED3859BFFD1CF5DC54 /* XCRemoteSwiftPackageReference "swift-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0D9ADFABB32A5F7F839F8489 /* Products */;
@@ -299,8 +334,8 @@
 			files = (
 				1E6B86AA48FA6BCB22B04908 /* AppState.swift in Sources */,
 				0E0BC369150DF854F3AC12EF /* AppSupportDirectoryResolver.swift in Sources */,
+				3A2762B2A0EF3A908CEAC9AD /* AudioChunker.swift in Sources */,
 				849F5F56F1F6B36993F0C071 /* AudioMixer.swift in Sources */,
-				F8BF796CFC82483E921E9215 /* AudioChunker.swift in Sources */,
 				233318A46E99CCF086632FE9 /* AudioSignalProviderFactory.swift in Sources */,
 				FD143A6B8DBDB62D27EDF5A7 /* CaptureEngine.swift in Sources */,
 				DE5CC3FFCFBE0137F8C41A63 /* CompositeWindowSignalProvider.swift in Sources */,
@@ -310,6 +345,8 @@
 				F7D0B0CB608C8B43D83265C4 /* DefaultWhisperModelDownloader.swift in Sources */,
 				2FC63D5B945056AEA4C1001A /* FallbackAudioSignalProvider.swift in Sources */,
 				80D5CCD1EEA255161EA6DF76 /* LaunchAtLoginManager.swift in Sources */,
+				9C6DF54D2B2FA78ED9055500 /* MCPServerController.swift in Sources */,
+				F5EBB01B5EFBB6EAF9F414CF /* MCPToolHandler.swift in Sources */,
 				781429B4E55BE4A61DFCBA7C /* Main.swift in Sources */,
 				6E4376385544B03ED6397DB0 /* MeetingDetector.swift in Sources */,
 				0954B63ABE167108494A615B /* MenuBarController.swift in Sources */,
@@ -318,6 +355,7 @@
 				2EFD4C81A411E5FC9EBB6EED /* SessionAudioArtifactStore.swift in Sources */,
 				5024222E23FF0516CC0207C1 /* SessionRepository.swift in Sources */,
 				1F59CC4EAFE2B87D84276A40 /* SlackHuddleWindowClassifier.swift in Sources */,
+				12C5987EF5AE8713A427F600 /* SummaryStore.swift in Sources */,
 				20BACEE68AA64E6EB59F6FE9 /* TeamsAccessibilityTextCollector.swift in Sources */,
 				998F1DCB9466C040DF0205A7 /* TeamsAudioSignalProvider.swift in Sources */,
 				A63BF37ED1429286B6FFF43B /* TeamsMeetingControlEvaluator.swift in Sources */,
@@ -524,6 +562,30 @@
 				minimumVersion = 0.9.0;
 			};
 		};
+		B5A378BF80336677651F9FB2 /* XCRemoteSwiftPackageReference "swift-nio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-nio.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+		CFBDF1D8371D246168BD9BB5 /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+		D2B405ED3859BFFD1CF5DC54 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/modelcontextprotocol/swift-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.7.0;
+			};
+		};
 		F8EF3182EC3278BD7328A530 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/argmaxinc/WhisperKit.git";
@@ -535,15 +597,40 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		12A84D93056927DD45044D7C /* MCP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2B405ED3859BFFD1CF5DC54 /* XCRemoteSwiftPackageReference "swift-sdk" */;
+			productName = MCP;
+		};
+		2FCBA5C3BB41CBA25CB49719 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CFBDF1D8371D246168BD9BB5 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
 		6CCEBA2327530615D69ADD92 /* ZIPFoundation */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 28712E9B539358EA2862EF70 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
 		};
+		8F9696D4BF89783D3254847D /* NIOHTTP1 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B5A378BF80336677651F9FB2 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOHTTP1;
+		};
 		9921F6FE321B5F0A2C5DF33B /* WhisperKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = F8EF3182EC3278BD7328A530 /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = WhisperKit;
+		};
+		9CD400A044B8D634CA400615 /* NIOPosix */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B5A378BF80336677651F9FB2 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOPosix;
+		};
+		FD4F49DFECF65EA01BB03F63 /* NIOCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B5A378BF80336677651F9FB2 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
