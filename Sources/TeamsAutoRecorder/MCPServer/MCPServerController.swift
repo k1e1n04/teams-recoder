@@ -193,6 +193,24 @@ private final class MCPHTTPHandler: ChannelInboundHandler, @unchecked Sendable {
     }
 
     private func process(head: HTTPRequestHead, buffer: ByteBuffer?, context: ChannelHandlerContext) async {
+        let path = String(head.uri.split(separator: "?").first ?? Substring(head.uri))
+
+        // OAuth ディスカバリエンドポイントは 404 で返す（認証不要サーバーの標準的な応答）
+        if path == "/.well-known/oauth-authorization-server"
+            || path == "/.well-known/oauth-protected-resource" {
+            nonisolated(unsafe) let ctx = context
+            ctx.eventLoop.execute {
+                var respHead = HTTPResponseHead(
+                    version: head.version,
+                    status: .notFound
+                )
+                respHead.headers.add(name: "content-length", value: "0")
+                ctx.write(self.wrapOutboundOut(.head(respHead)), promise: nil)
+                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+            }
+            return
+        }
+
         var headers: [String: String] = [:]
         for (name, value) in head.headers {
             headers[name] = value
@@ -210,7 +228,7 @@ private final class MCPHTTPHandler: ChannelInboundHandler, @unchecked Sendable {
             method: head.method.rawValue,
             headers: headers,
             body: body,
-            path: String(head.uri.split(separator: "?").first ?? Substring(head.uri))
+            path: path
         )
 
         let response = await transport.handleRequest(request)
