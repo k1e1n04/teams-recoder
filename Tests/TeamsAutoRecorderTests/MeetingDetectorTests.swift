@@ -37,17 +37,41 @@ final class MeetingDetectorTests: XCTestCase {
             audioRequiredRatio: 0.5,
             stopGraceSeconds: 2,
             minRecordingSeconds: 5,
-            falsePositiveCapPerDay: 2
+            falsePositiveCapPerDay: 2,
+            windowGoneTimeoutSeconds: 30
         )
         let detector = MeetingDetector(config: config)
         let base = Date(timeIntervalSince1970: 0)
 
         _ = detector.ingest(windowActive: true, audioActive: true, at: base)
-        // 他のウィンドウにフォーカスしても音声がある限り停止しない
+        // 他のウィンドウにフォーカスしても音声がある限り停止しない（タイムアウトまでは）
         XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(1)))
         XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(2)))
         XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(4)))
         XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(10)))
+    }
+
+    func testStopsRecordingWhenWindowGoneTimeoutExceededEvenWithAudioActive() {
+        // ミーティング終了後、環境音でマイクが拾い続けても windowGoneTimeoutSeconds 経過で強制停止する
+        let config = MeetingDetectorConfig(
+            startUISeconds: 1,
+            audioWindowSeconds: 1,
+            audioRequiredRatio: 1.0,
+            stopGraceSeconds: 10,
+            minRecordingSeconds: 3,
+            falsePositiveCapPerDay: 2,
+            windowGoneTimeoutSeconds: 5
+        )
+        let detector = MeetingDetector(config: config)
+        let base = Date(timeIntervalSince1970: 0)
+
+        _ = detector.ingest(windowActive: true, audioActive: true, at: base)
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(1)))
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(2)))
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(3)))
+        XCTAssertNil(detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(4)))
+        let stop = detector.ingest(windowActive: false, audioActive: true, at: base.addingTimeInterval(5))
+        XCTAssertEqual(stop, .stopped(sessionID: "session-0"))
     }
 
     func testStopsRecordingWhenWindowLosesFocusAndAudioAlsoStops() {

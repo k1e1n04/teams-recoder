@@ -7,6 +7,9 @@ public struct MeetingDetectorConfig: Equatable, Sendable {
     public let stopGraceSeconds: Int
     public let minRecordingSeconds: Int
     public let falsePositiveCapPerDay: Int
+    /// ウィンドウが消えてからこの秒数が経過したら、マイク音声の状態に関わらず強制停止する。
+    /// ミーティング終了後に環境音でマイクが拾い続けて録音が終わらない問題を防ぐ。
+    public let windowGoneTimeoutSeconds: Int
 
     public init(
         startUISeconds: Int = 8,
@@ -14,7 +17,8 @@ public struct MeetingDetectorConfig: Equatable, Sendable {
         audioRequiredRatio: Double = 0.7,
         stopGraceSeconds: Int = 6,
         minRecordingSeconds: Int = 120,
-        falsePositiveCapPerDay: Int = 5
+        falsePositiveCapPerDay: Int = 5,
+        windowGoneTimeoutSeconds: Int = 30
     ) {
         self.startUISeconds = startUISeconds
         self.audioWindowSeconds = audioWindowSeconds
@@ -22,6 +26,7 @@ public struct MeetingDetectorConfig: Equatable, Sendable {
         self.stopGraceSeconds = stopGraceSeconds
         self.minRecordingSeconds = minRecordingSeconds
         self.falsePositiveCapPerDay = falsePositiveCapPerDay
+        self.windowGoneTimeoutSeconds = windowGoneTimeoutSeconds
     }
 
     public static let forTests = MeetingDetectorConfig(
@@ -30,7 +35,8 @@ public struct MeetingDetectorConfig: Equatable, Sendable {
         audioRequiredRatio: 1,
         stopGraceSeconds: 1,
         minRecordingSeconds: 2,
-        falsePositiveCapPerDay: 2
+        falsePositiveCapPerDay: 2,
+        windowGoneTimeoutSeconds: 30
     )
 }
 
@@ -51,6 +57,7 @@ public final class MeetingDetector {
     private var mode: Mode = .idle
     private var uiStreakSeconds = 0
     private var stopStreakSeconds = 0
+    private var windowGoneSeconds = 0
     private var audioWindow: [Bool] = []
     private var falsePositivesByDay: [String: Int] = [:]
 
@@ -80,6 +87,12 @@ public final class MeetingDetector {
                 return .started(sessionID: sessionID)
             }
         case let .recording(sessionID, startedAt):
+            if !windowActive {
+                windowGoneSeconds += 1
+            } else {
+                windowGoneSeconds = 0
+            }
+
             let shouldStop = !windowActive && !audioActive
             if shouldStop {
                 stopStreakSeconds += 1
@@ -88,9 +101,13 @@ public final class MeetingDetector {
             }
 
             let duration = Int(timestamp.timeIntervalSince(startedAt))
-            if stopStreakSeconds >= config.stopGraceSeconds && duration >= config.minRecordingSeconds {
+            let normalStop = stopStreakSeconds >= config.stopGraceSeconds && duration >= config.minRecordingSeconds
+            // マイクが環境音を拾い続けても、ウィンドウが消えてから一定時間で強制停止する
+            let windowGoneStop = windowGoneSeconds >= config.windowGoneTimeoutSeconds && duration >= config.minRecordingSeconds
+            if normalStop || windowGoneStop {
                 mode = .idle
                 stopStreakSeconds = 0
+                windowGoneSeconds = 0
                 uiStreakSeconds = 0
                 audioWindow.removeAll(keepingCapacity: true)
                 return .stopped(sessionID: sessionID)
