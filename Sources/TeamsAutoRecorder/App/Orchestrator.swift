@@ -31,9 +31,10 @@ public final class RecorderOrchestrator {
     public func tick(
         windowActive: Bool,
         audioActive: Bool,
+        meetingAppRunning: Bool = true,
         now: Date
     ) async -> MeetingDetectorEvent? {
-        let event = detector.ingest(windowActive: windowActive, audioActive: audioActive, at: now)
+        let event = detector.ingest(windowActive: windowActive, audioActive: audioActive, meetingAppRunning: meetingAppRunning, at: now)
         guard let event else {
             if case .recording = appStateMachine.state {
                 try? captureEngine.appendTeams(samples: [audioActive ? 1 : 0], timestamp: now.timeIntervalSince1970)
@@ -143,6 +144,7 @@ public struct AppBootstrap {
 public final class RecorderRuntime {
     private let windowSignalProvider: TeamsWindowSignalProviding
     private let audioSignalProvider: TeamsAudioSignalProviding
+    private let meetingAppRunningProvider: (Date) -> Bool
     private let orchestrator: RecorderOrchestrator?
     private let tickHandler: (@MainActor (Bool, Bool, Date) async -> MeetingDetectorEvent?)?
 
@@ -153,6 +155,7 @@ public final class RecorderRuntime {
     ) {
         self.windowSignalProvider = windowSignalProvider
         self.audioSignalProvider = audioSignalProvider
+        self.meetingAppRunningProvider = { _ in true }
         self.orchestrator = nil
         self.tickHandler = tickHandler
     }
@@ -160,10 +163,12 @@ public final class RecorderRuntime {
     public init(
         orchestrator: RecorderOrchestrator,
         windowSignalProvider: TeamsWindowSignalProviding,
-        audioSignalProvider: TeamsAudioSignalProviding
+        audioSignalProvider: TeamsAudioSignalProviding,
+        meetingAppRunningProvider: @escaping (Date) -> Bool = { _ in true }
     ) {
         self.windowSignalProvider = windowSignalProvider
         self.audioSignalProvider = audioSignalProvider
+        self.meetingAppRunningProvider = meetingAppRunningProvider
         self.orchestrator = orchestrator
         self.tickHandler = nil
     }
@@ -185,10 +190,12 @@ public final class RecorderRuntime {
         if windowActive {
             audioActive = true
         }
+        let meetingAppRunning = meetingAppRunningProvider(now)
         if let orchestrator {
             return await orchestrator.tick(
                 windowActive: windowActive,
                 audioActive: audioActive,
+                meetingAppRunning: meetingAppRunning,
                 now: now
             )
         }

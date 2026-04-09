@@ -1135,7 +1135,10 @@ private final class RuntimeController: ObservableObject {
             runtime = RecorderRuntime(
                 orchestrator: orchestrator,
                 windowSignalProvider: windowProvider,
-                audioSignalProvider: audioProvider
+                audioSignalProvider: audioProvider,
+                meetingAppRunningProvider: { [weak self] _ in
+                    self?.isMeetingAppRunning() ?? false
+                }
             )
 
             let queue = orchestrator.transcriptionQueue
@@ -1187,6 +1190,19 @@ private final class RuntimeController: ObservableObject {
         statusText = accessibilityMissingStatus
         let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
+    }
+
+    /// Teams または Slack のプロセスがひとつでも起動中なら true を返す。
+    /// ウィンドウ消失タイムアウトの誤発動防止（別ウィンドウ作業中の会議録音継続）に使用。
+    private func isMeetingAppRunning() -> Bool {
+        let teamsBundleIDs = ["com.microsoft.teams2", "com.microsoft.teams"]
+        let slackBundleID = "com.tinyspeck.slackmacgap"
+        let allBundleIDs = teamsBundleIDs + [slackBundleID]
+        return allBundleIDs.contains { bundleID in
+            !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+                .filter { !$0.isTerminated }
+                .isEmpty
+        }
     }
 
     private func hasVisibleTeamsWindow() -> Bool {

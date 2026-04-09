@@ -65,7 +65,7 @@ public final class MeetingDetector {
         self.config = config
     }
 
-    public func ingest(windowActive: Bool, audioActive: Bool, at timestamp: Date) -> MeetingDetectorEvent? {
+    public func ingest(windowActive: Bool, audioActive: Bool, meetingAppRunning: Bool = true, at timestamp: Date) -> MeetingDetectorEvent? {
         if windowActive {
             uiStreakSeconds += 1
         } else {
@@ -102,8 +102,9 @@ public final class MeetingDetector {
 
             let duration = Int(timestamp.timeIntervalSince(startedAt))
             let normalStop = stopStreakSeconds >= config.stopGraceSeconds && duration >= config.minRecordingSeconds
-            // マイクが環境音を拾い続けても、ウィンドウが消えてから一定時間で強制停止する
-            let windowGoneStop = windowGoneSeconds >= config.windowGoneTimeoutSeconds && duration >= config.minRecordingSeconds
+            // Teams/Slack プロセスが終了していて、ウィンドウも消えた状態が続いた場合に強制停止。
+            // アプリが起動中は会議中の可能性があるため発動しない（別ウィンドウで作業中の誤停止を防ぐ）。
+            let windowGoneStop = !meetingAppRunning && windowGoneSeconds >= config.windowGoneTimeoutSeconds && duration >= config.minRecordingSeconds
             if normalStop || windowGoneStop {
                 mode = .idle
                 stopStreakSeconds = 0
