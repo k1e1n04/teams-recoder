@@ -26,6 +26,7 @@ public struct CapturedAudioSamples: Equatable {
 public protocol LiveCaptureSession: AnyObject {
     func start() throws
     func stop() throws -> CapturedAudioSamples
+    func isAudioActive(at: Date) -> Bool
 }
 
 public typealias LiveCaptureSessionFactory = (String) -> LiveCaptureSession?
@@ -113,6 +114,10 @@ public final class CaptureEngine {
         chunks[timestamp, default: .init()].mic = samples
     }
 
+    public func isInternalAudioActive(at date: Date) -> Bool {
+        liveSession?.isAudioActive(at: date) ?? false
+    }
+
     public func stop() throws -> CaptureArtifact {
         guard let sessionID = currentSessionID else {
             throw CaptureEngineError.notRecording
@@ -185,6 +190,11 @@ private final class TeamsLiveCaptureSession: NSObject, LiveCaptureSession {
     private let micEngine = AVAudioEngine()
     private let realtimeMixer = RealtimeAudioMixer(sampleRate: 16_000)
 
+    private let audioActivityLock = NSLock()
+    private var lastAudioActiveAt: Date = .distantPast
+    private let audioActivityThreshold: Float = 0.001
+    private let audioActivityHoldSeconds: TimeInterval = 1.5
+
     override init() {
         streamOutput = StreamAudioOutput()
         super.init()
@@ -194,6 +204,12 @@ private final class TeamsLiveCaptureSession: NSObject, LiveCaptureSession {
             self.teamsSamples.append(contentsOf: samples)
             self.lock.unlock()
             self.realtimeMixer.appendTeams(samples: samples)
+            let rms = Self.rootMeanSquare(from: samples)
+            if rms >= self.audioActivityThreshold {
+                self.audioActivityLock.lock()
+                self.lastAudioActiveAt = Date()
+                self.audioActivityLock.unlock()
+            }
         }
     }
 
@@ -278,6 +294,19 @@ private final class TeamsLiveCaptureSession: NSObject, LiveCaptureSession {
             try await stream.startCapture()
         }
         self.stream = stream
+    }
+
+    func isAudioActive(at date: Date) -> Bool {
+        audioActivityLock.lock()
+        let last = lastAudioActiveAt
+        audioActivityLock.unlock()
+        return date.timeIntervalSince(last) <= audioActivityHoldSeconds
+    }
+
+    private static func rootMeanSquare(from samples: [Float]) -> Float {
+        guard !samples.isEmpty else { return 0 }
+        let sumSquares = samples.reduce(Float(0)) { $0 + $1 * $1 }
+        return sqrt(sumSquares / Float(samples.count))
     }
 
     private static func samples(from buffer: AVAudioPCMBuffer, targetSampleRate: Double) -> [Float] {

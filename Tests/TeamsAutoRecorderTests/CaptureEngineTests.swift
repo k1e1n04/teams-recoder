@@ -82,6 +82,36 @@ final class CaptureEngineTests: XCTestCase {
         XCTAssertThrowsError(try engine.start(sessionID: "live-fail"))
     }
 
+    func testIsInternalAudioActiveReturnsFalseWhenNoLiveSession() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let engine = CaptureEngine(
+            mixer: AudioMixer(),
+            outputDirectory: dir,
+            liveCaptureFactory: { _ in nil }
+        )
+
+        XCTAssertFalse(engine.isInternalAudioActive(at: Date()))
+    }
+
+    func testIsInternalAudioActiveReturnsFalseWhenStubReturnsInactive() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let session = LiveCaptureSessionStub(stopResult: .success(.init(teams: [], mic: [])))
+        let engine = CaptureEngine(
+            mixer: AudioMixer(),
+            outputDirectory: dir,
+            liveCaptureFactory: { _ in session }
+        )
+        try engine.start(sessionID: "audio-active-test")
+
+        XCTAssertFalse(engine.isInternalAudioActive(at: Date()))
+
+        _ = try engine.stop()
+    }
+
     func testStopFallsBackToMixingLiveInputsWhenRecordedMixIsAllZero() throws {
         let dir = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent(UUID().uuidString)
@@ -144,4 +174,6 @@ final class LiveCaptureSessionStub: LiveCaptureSession {
         stopCallCount += 1
         return try stopResult.get()
     }
+
+    func isAudioActive(at: Date) -> Bool { false }
 }

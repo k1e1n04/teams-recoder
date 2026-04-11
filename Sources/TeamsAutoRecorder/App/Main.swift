@@ -1057,7 +1057,6 @@ private final class RuntimeController: ObservableObject {
     private var loopTask: Task<Void, Never>?
     private var onSessionSaved: (() -> Void)?
     private var notificationSink: NotificationSink?
-    private var microphoneMonitor: MicrophoneLevelMonitor?
     private let accessibilityTextCollector = TeamsAccessibilityTextCollector()
     private let ocrTextCollector = TeamsWindowOCRTextCollector()
     private var hasRequestedAccessibilityTrust = false
@@ -1110,26 +1109,8 @@ private final class RuntimeController: ObservableObject {
                 self.hasVisibleSlackHuddle()
             })
             let windowProvider = CompositeWindowSignalProvider(providers: [teamsWindowProvider, slackWindowProvider])
-            let windowFallbackProvider = TeamsAudioSignalProvider { date in
+            let audioProvider = TeamsAudioSignalProvider { date in
                 windowProvider.isMeetingWindowActive(at: date)
-            }
-            let audioProvider: TeamsAudioSignalProviding
-            do {
-                let monitor = try MicrophoneLevelMonitor()
-                microphoneMonitor = monitor
-                let micProvider = TeamsAudioSignalProvider { date in
-                    monitor.isActive(at: date)
-                }
-                audioProvider = AudioSignalProviderFactory.make(
-                    microphoneProvider: micProvider,
-                    windowFallbackProvider: windowFallbackProvider
-                )
-            } catch {
-                // If mic metering setup fails, fall back to Teams window activity.
-                audioProvider = AudioSignalProviderFactory.make(
-                    microphoneProvider: nil,
-                    windowFallbackProvider: windowFallbackProvider
-                )
             }
 
             runtime = RecorderRuntime(
@@ -1270,66 +1251,5 @@ private final class RuntimeController: ObservableObject {
                 statusText = "録音開始エラー"
             }
         }
-    }
-}
-
-// MARK: - MicrophoneLevelMonitor
-
-private final class MicrophoneLevelMonitor {
-    private let engine = AVAudioEngine()
-    private let thresholdRMS: Float
-    private let holdSeconds: TimeInterval
-    private let lock = NSLock()
-    private var lastActiveAt: Date = .distantPast
-
-    init(thresholdRMS: Float = 0.0015, holdSeconds: TimeInterval = 1.5) throws {
-        self.thresholdRMS = thresholdRMS
-        self.holdSeconds = holdSeconds
-        try configureAndStart()
-    }
-
-    deinit {
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
-    }
-
-    func isActive(at date: Date) -> Bool {
-        lock.lock()
-        let last = lastActiveAt
-        lock.unlock()
-        return date.timeIntervalSince(last) <= holdSeconds
-    }
-
-    private func configureAndStart() throws {
-        let inputNode = engine.inputNode
-        let format = inputNode.inputFormat(forBus: 0)
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            guard let self else { return }
-            let rms = Self.rootMeanSquare(from: buffer)
-            guard rms >= self.thresholdRMS else { return }
-            self.lock.lock()
-            self.lastActiveAt = Date()
-            self.lock.unlock()
-        }
-        engine.prepare()
-        try engine.start()
-    }
-
-    private static func rootMeanSquare(from buffer: AVAudioPCMBuffer) -> Float {
-        guard let channel = buffer.floatChannelData?.pointee else {
-            return 0
-        }
-        let frameCount = Int(buffer.frameLength)
-        guard frameCount > 0 else {
-            return 0
-        }
-
-        var sumSquares: Float = 0
-        for i in 0 ..< frameCount {
-            let s = channel[i]
-            sumSquares += s * s
-        }
-        return sqrt(sumSquares / Float(frameCount))
     }
 }

@@ -33,7 +33,8 @@ public final class RecorderOrchestrator {
         audioActive: Bool,
         now: Date
     ) async -> MeetingDetectorEvent? {
-        let event = detector.ingest(windowActive: windowActive, audioActive: audioActive, at: now)
+        let internalAudio = captureEngine.isInternalAudioActive(at: now)
+        let event = detector.ingest(windowActive: windowActive, audioActive: audioActive || internalAudio, at: now)
         guard let event else {
             if case .recording = appStateMachine.state {
                 try? captureEngine.appendTeams(samples: [audioActive ? 1 : 0], timestamp: now.timeIntervalSince1970)
